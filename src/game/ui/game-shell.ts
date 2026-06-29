@@ -262,6 +262,11 @@ export class GameShell {
     const income = state.resources.incomeRate;
     const expense = state.resources.expenseRate;
     const net = income - expense;
+    const labCount = state.statistics.totalResearchCompleted;
+
+    // Era cost info (imported from main).
+    const eraInfo = this.getNextEraCostDisplay(state);
+
     this.panelContent.innerHTML = `
       <div class="gs-stat-grid">
         <div class="gs-stat"><span class="gs-stat-label">Currency</span><span class="gs-stat-value">${formatNumber(state.resources.currency)}</span></div>
@@ -269,14 +274,59 @@ export class GameShell {
         <div class="gs-stat"><span class="gs-stat-label">Expenses</span><span class="gs-stat-value gs-negative">-${formatNumber(expense)}/s</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Net</span><span class="gs-stat-value ${net >= 0 ? 'gs-positive' : 'gs-negative'}">${net >= 0 ? '+' : ''}${formatNumber(net)}/s</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Energy</span><span class="gs-stat-value">${formatNumber(state.energy.stored)} / ${formatNumber(state.energy.maxStorage)}</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">Knowledge</span><span class="gs-stat-value">${formatNumber(state.resources.knowledgePoints)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Knowledge</span><span class="gs-stat-value">${formatNumber(state.resources.knowledgePoints)} (+${labCount * 2}/s)</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Labs</span><span class="gs-stat-value">${labCount}</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Coal</span><span class="gs-stat-value">${formatNumber(state.materials.stockpiles.coal ?? 0)}</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Iron</span><span class="gs-stat-value">${formatNumber(state.materials.stockpiles.iron_ore ?? 0)}</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Steel</span><span class="gs-stat-value">${formatNumber(state.materials.stockpiles.steel ?? 0)}</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Military</span><span class="gs-stat-value">${formatNumber(state.weapons.militaryPower)}</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">Solar Panels</span><span class="gs-stat-value">${state.energy.solarPanels.length}</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">Power Plants</span><span class="gs-stat-value">${state.energy.powerPlants.length}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Weapons Factories</span><span class="gs-stat-value">${state.weapons.factories.length} (-${state.weapons.factories.length * 5}⚡/s)</span></div>
       </div>
+      <h3 class="gs-section-title">Era Progression</h3>
+      ${eraInfo}
+    `;
+  }
+
+  private getNextEraCostDisplay(state: GameState): string {
+    const ERA_COSTS: Record<string, { currency: number; knowledge: number; steel: number; energy: number }> = {
+      nuclear: { currency: 5000, knowledge: 200, steel: 50, energy: 2000 },
+      solar: { currency: 15000, knowledge: 500, steel: 150, energy: 5000 },
+      orbital: { currency: 50000, knowledge: 1500, steel: 500, energy: 15000 },
+      mars_colonization: { currency: 150000, knowledge: 5000, steel: 2000, energy: 50000 },
+      space_mining: { currency: 500000, knowledge: 15000, steel: 8000, energy: 150000 },
+      dyson_ring: { currency: 2000000, knowledge: 50000, steel: 30000, energy: 500000 },
+    };
+
+    const eraOrder = ['fossil', 'nuclear', 'solar', 'orbital', 'mars_colonization', 'space_mining', 'dyson_ring'];
+    const currentIndex = eraOrder.indexOf(state.currentEra);
+    if (currentIndex >= eraOrder.length - 1) {
+      return `<p class="gs-positive">🏆 Final era reached!</p>`;
+    }
+
+    const nextEra = eraOrder[currentIndex + 1];
+    const cost = ERA_COSTS[nextEra];
+    if (!cost) return '';
+
+    const canAfford =
+      state.resources.currency >= cost.currency &&
+      state.resources.knowledgePoints >= cost.knowledge &&
+      (state.materials.stockpiles.steel ?? 0) >= cost.steel &&
+      state.energy.stored >= cost.energy;
+
+    const check = (have: number, need: number) =>
+      have >= need ? `<span class="gs-positive">${formatNumber(have)}/${formatNumber(need)} ✓</span>` : `<span class="gs-negative">${formatNumber(have)}/${formatNumber(need)} ✗</span>`;
+
+    return `
+      <div class="gs-stat-grid" style="margin-bottom:12px">
+        <div class="gs-stat"><span class="gs-stat-label">Next Era</span><span class="gs-stat-value">${nextEra.replace('_', ' ')}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Currency</span>${check(state.resources.currency, cost.currency)}</div>
+        <div class="gs-stat"><span class="gs-stat-label">Knowledge</span>${check(state.resources.knowledgePoints, cost.knowledge)}</div>
+        <div class="gs-stat"><span class="gs-stat-label">Steel</span>${check(state.materials.stockpiles.steel ?? 0, cost.steel)}</div>
+        <div class="gs-stat"><span class="gs-stat-label">Energy Stored</span>${check(state.energy.stored, cost.energy)}</div>
+      </div>
+      <button class="gs-action-btn ${canAfford ? '' : ''}" data-action='${JSON.stringify({ type: 'advance_era', payload: {} })}' ${canAfford ? '' : 'disabled'}>
+        🚀 Advance to ${nextEra.replace('_', ' ')} Era
+      </button>
     `;
   }
 
@@ -286,17 +336,83 @@ export class GameShell {
     const btn = (label: string, action: ActionPayload, cost: number) =>
       `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${currency < cost ? 'disabled' : ''}>${label}</button>`;
 
+    // Calculate labs and storage upgrade costs.
+    const storageCost = 300 + state.energy.maxStorage * 0.5;
+    const labCost = 250;
+
     this.panelContent.innerHTML = `
+      <h3 class="gs-section-title">Power & Energy</h3>
       <div class="gs-action-list">
         ${btn('⚡ Coal Power Plant ($150)', { type: 'build_power_plant', payload: { type: 'coal', cost: 150 } }, 150)}
         ${btn('☀️ Solar Panel ($100)', { type: 'build_solar_panel', payload: { locationId: 'arizona', cost: 100 } }, 100)}
+        ${btn(`🔋 Upgrade Storage ($${Math.floor(storageCost)}) [+200 cap]`, { type: 'upgrade_storage', payload: { cost: Math.floor(storageCost) } }, storageCost)}
+      </div>
+
+      <h3 class="gs-section-title">Mining & Industry</h3>
+      <div class="gs-action-list">
         ${btn('⛏️ Coal Mine ($80)', { type: 'build_mine', payload: { materialType: 'coal', cost: 80, depositQuality: 0.7 } }, 80)}
         ${btn('⛏️ Iron Mine ($80)', { type: 'build_mine', payload: { materialType: 'iron_ore', cost: 80, depositQuality: 0.6 } }, 80)}
-        ${btn('🏭 Distribution ($200)', { type: 'build_distribution_network', payload: { cost: 200 } }, 200)}
-        ${btn('🔫 Weapons Factory', { type: 'build_weapons_factory', payload: { producing: 'conventional' } }, 0)}
+        ${btn('⛏️ Silicon Mine ($90)', { type: 'build_mine', payload: { materialType: 'silicon', cost: 90, depositQuality: 0.5 } }, 90)}
+        ${btn('🏭 Distribution Network ($200)', { type: 'build_distribution_network', payload: { cost: 200 } }, 200)}
+      </div>
+
+      <h3 class="gs-section-title">Research & Military</h3>
+      <div class="gs-action-list">
+        ${btn(`🔬 Research Lab ($${labCost}) [+2 knowledge/tick]`, { type: 'build_lab', payload: { cost: labCost } }, labCost)}
+        ${btn('🔫 Weapons Factory (uses 5 energy/tick)', { type: 'build_weapons_factory', payload: { producing: 'conventional' } }, 0)}
+      </div>
+
+      <h3 class="gs-section-title">Space (requires orbital era)</h3>
+      <div class="gs-action-list">
         ${btn('🛰️ Orbital Platform (10 fuel + 20 steel)', { type: 'build_orbital_platform', payload: { type: 'solar_collector', output: 15 } }, 0)}
       </div>
+
+      <h3 class="gs-section-title">Placement Grid</h3>
+      <p class="gs-muted">Your base has ${state.energy.solarPanels.length} solar panels, ${state.energy.powerPlants.length} plants, ${state.infrastructure.mines.length} mines.</p>
+      ${this.renderPlacementGrid(state)}
     `;
+  }
+
+  /**
+   * Simple visual grid showing placed buildings as colored cells.
+   * 8x6 grid; each building takes 1 cell.
+   */
+  private renderPlacementGrid(state: GameState): string {
+    const COLS = 8;
+    const ROWS = 6;
+    const cells: string[] = new Array(COLS * ROWS).fill('⬛');
+
+    // Fill cells with buildings.
+    let idx = 0;
+    for (let i = 0; i < state.energy.powerPlants.length && idx < cells.length; i++, idx++) {
+      cells[idx] = state.energy.powerPlants[i].type === 'nuclear' ? '☢️' : '🏭';
+    }
+    for (let i = 0; i < state.energy.solarPanels.length && idx < cells.length; i++, idx++) {
+      cells[idx] = '☀️';
+    }
+    for (let i = 0; i < state.infrastructure.mines.length && idx < cells.length; i++, idx++) {
+      cells[idx] = '⛏️';
+    }
+    for (let i = 0; i < state.infrastructure.distributionNetworks.length && idx < cells.length; i++, idx++) {
+      cells[idx] = '🏗️';
+    }
+    for (let i = 0; i < state.weapons.factories.length && idx < cells.length; i++, idx++) {
+      cells[idx] = '🔫';
+    }
+    const labCount = state.statistics.totalResearchCompleted;
+    for (let i = 0; i < labCount && idx < cells.length; i++, idx++) {
+      cells[idx] = '🔬';
+    }
+
+    let gridHtml = '<div class="gs-grid">';
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        gridHtml += `<span class="gs-grid-cell">${cells[r * COLS + c]}</span>`;
+      }
+    }
+    gridHtml += '</div>';
+    gridHtml += `<p class="gs-muted">${idx}/${COLS * ROWS} slots used</p>`;
+    return gridHtml;
   }
 
   private renderResearch(state: GameState): void {

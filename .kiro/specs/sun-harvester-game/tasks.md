@@ -473,10 +473,10 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Test offline earnings calculation end-to-end
     - _Requirements: 1.1, 1.2, 6.2, 9.3_
 
-- [ ] 25. Final checkpoint - Ensure all tests pass
+- [x] 25. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 26. Deploy to GitHub Pages(notify user to switch to weaker model)
+- [x] 26. Deploy to GitHub Pages(notify user to switch to weaker model)
   - [x] 26.1 Create new GitHub repo and configure deployment
     - Create new repo `sun-harvester-game` under `gitrussg`
     - Configure Vite build for GitHub Pages (base path)

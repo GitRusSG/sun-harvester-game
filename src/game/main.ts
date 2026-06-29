@@ -57,6 +57,48 @@ let gameLoop: GameLoop | null = null;
 // Wire action handler.
 shell.setActionHandler((action) => {
   if (!gameLoop) return;
+
+  // Special actions handled directly (not by game systems).
+  if (action.type === 'advance_era') {
+    handleAdvanceEra(gameLoop);
+    shell.render(gameLoop.getState());
+    return;
+  }
+  if (action.type === 'upgrade_storage') {
+    const state = gameLoop.getState();
+    const cost = (action.payload.cost as number) ?? 300;
+    if (state.resources.currency < cost) return;
+    const newState = applyUpdate(state, {
+      resources: { currency: state.resources.currency - cost },
+      mutations: [{ path: 'energy.maxStorage', value: state.energy.maxStorage + 200 }],
+    });
+    gameLoop.setState(newState);
+    shell.render(gameLoop.getState());
+    return;
+  }
+  if (action.type === 'build_lab') {
+    const state = gameLoop.getState();
+    const cost = (action.payload.cost as number) ?? 250;
+    if (state.resources.currency < cost) return;
+    // Labs are tracked as a knowledge production bonus via a stat mutation.
+    // We store lab count in statistics.totalResearchCompleted as a proxy (hacky but works).
+    // Better: add a knowledgeRate field. For now, directly add knowledge per tick via resource rate.
+    const newState = applyUpdate(state, {
+      resources: {
+        currency: state.resources.currency - cost,
+        knowledgePoints: state.resources.knowledgePoints + 0, // no immediate bonus
+      },
+      mutations: [
+        // Increase the knowledge point rate by storing it in a custom stat.
+        // We'll bump knowledgePoints directly in the render callback.
+        { path: 'statistics.totalResearchCompleted', value: state.statistics.totalResearchCompleted + 1 },
+      ],
+    });
+    gameLoop.setState(newState);
+    shell.render(gameLoop.getState());
+    return;
+  }
+
   const state = gameLoop.getState();
   for (const system of gameSystems) {
     if (system.canPerform(state, { type: action.type, payload: action.payload })) {
@@ -68,7 +110,6 @@ shell.setActionHandler((action) => {
           eventController.enqueue(update.events);
           eventController.dispatch();
         }
-        // Force a re-render so the panel updates.
         shell.render(gameLoop.getState());
         break;
       }
@@ -97,8 +138,31 @@ function startGame(country: CountryId): void {
     const now = performance.now();
     if (now - lastRender < 1000) return;
     lastRender = now;
+
+    // Labs generate knowledge: 2 per tick per lab (labs stored as totalResearchCompleted).
+    const labCount = currentState.statistics.totalResearchCompleted;
+    if (labCount > 0) {
+      const knowledgeGain = labCount * 2;
+      const updated = applyUpdate(currentState, {
+        resources: { knowledgePoints: currentState.resources.knowledgePoints + knowledgeGain },
+      });
+      loop.setState(updated);
+      currentState = updated;
+    }
+
+    // Weapons factories consume energy (5 per factory per tick).
+    const weaponFactoryCount = currentState.weapons.factories.length;
+    if (weaponFactoryCount > 0) {
+      const energyDrain = weaponFactoryCount * 5;
+      const newStored = Math.max(0, currentState.energy.stored - energyDrain);
+      const updated = applyUpdate(currentState, {
+        mutations: [{ path: 'energy.stored', value: newStored }],
+      });
+      loop.setState(updated);
+      currentState = updated;
+    }
+
     shell.render(currentState);
-    checkEraProgression(loop);
   });
 
   loop.calculateOfflineEarnings();
@@ -109,27 +173,69 @@ function startGame(country: CountryId): void {
 
 // ─── Era Progression ────────────────────────────────────────────────────────
 
-function checkEraProgression(loop: GameLoop): void {
-  const state = loop.getState();
+// Era advancement costs (currency, knowledge, steel, energy stored).
+const ERA_COSTS: Record<string, { currency: number; knowledge: number; steel: number; energy: number }> = {
+  nuclear: { currency: 5000, knowledge: 200, steel: 50, energy: 2000 },
+  solar: { currency: 15000, knowledge: 500, steel: 150, energy: 5000 },
+  orbital: { currency: 50000, knowledge: 1500, steel: 500, energy: 15000 },
+  mars_colonization: { currency: 150000, knowledge: 5000, steel: 2000, energy: 50000 },
+  space_mining: { currency: 500000, knowledge: 15000, steel: 8000, energy: 150000 },
+  dyson_ring: { currency: 2000000, knowledge: 50000, steel: 30000, energy: 500000 },
+};
+
+export function getNextEraCost(state: GameState) {
   const currentIndex = ERA_ORDER.indexOf(state.currentEra);
-  if (currentIndex >= ERA_ORDER.length - 1) return;
+  if (currentIndex >= ERA_ORDER.length - 1) return null;
   const nextEra = ERA_ORDER[currentIndex + 1];
-  if (areEraConditionsMet(nextEra, state)) {
-    const advanced = advanceEra({
-      ...state,
-      eraProgress: { ...state.eraProgress, [state.currentEra]: 100 },
-    });
-    if (advanced.currentEra !== state.currentEra) {
-      loop.setState(advanced);
-      eventController.enqueue([{
-        id: `era_unlock_${advanced.currentEra}_${Date.now()}`,
-        type: 'era_unlock',
-        payload: { era: advanced.currentEra },
-        timestamp: Date.now(),
-      }]);
-      eventController.dispatch();
-    }
-  }
+  const cost = ERA_COSTS[nextEra];
+  if (!cost) return null;
+  return { era: nextEra, ...cost };
+}
+
+export function canAdvanceEra(state: GameState): boolean {
+  const cost = getNextEraCost(state);
+  if (!cost) return false;
+  return (
+    state.resources.currency >= cost.currency &&
+    state.resources.knowledgePoints >= cost.knowledge &&
+    (state.materials.stockpiles.steel ?? 0) >= cost.steel &&
+    state.energy.stored >= cost.energy
+  );
+}
+
+function handleAdvanceEra(loop: GameLoop): void {
+  const state = loop.getState();
+  const cost = getNextEraCost(state);
+  if (!cost || !canAdvanceEra(state)) return;
+
+  // Deduct resources.
+  const update = applyUpdate(state, {
+    resources: {
+      currency: state.resources.currency - cost.currency,
+      knowledgePoints: state.resources.knowledgePoints - cost.knowledge,
+    },
+    materials: {
+      stockpiles: {
+        ...state.materials.stockpiles,
+        steel: (state.materials.stockpiles.steel ?? 0) - cost.steel,
+      },
+    },
+    mutations: [
+      { path: 'energy.stored', value: state.energy.stored - cost.energy },
+      { path: 'eraProgress.' + state.currentEra, value: 100 },
+    ],
+  });
+
+  // Advance era.
+  const advanced = advanceEra(update);
+  loop.setState(advanced);
+  eventController.enqueue([{
+    id: `era_unlock_${advanced.currentEra}_${Date.now()}`,
+    type: 'era_unlock',
+    payload: { era: advanced.currentEra },
+    timestamp: Date.now(),
+  }]);
+  eventController.dispatch();
 }
 
 // ─── Launch ─────────────────────────────────────────────────────────────────

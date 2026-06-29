@@ -254,3 +254,25 @@
 
 .gs-country-card strong { font-size: 15px; }
 .gs-country-card small { color: #94a3b8; font-size: 12px; }
+
+/* Placement grid */
+.gs-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  margin: 8px 0;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.gs-grid-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  font-size: 16px;
+  background: #1e293b;
+  border-radius: 3px;
+}
