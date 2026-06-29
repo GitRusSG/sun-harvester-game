@@ -2427,6 +2427,41 @@ export class DomRenderer implements Renderer {
     io.appendChild(actions);
 
     body.appendChild(io);
+
+    // Restart card.
+    const restart = this.buildCard('Restart Game');
+    const restartIntro = document.createElement('p');
+    restartIntro.className = 'shg-craft__empty';
+    restartIntro.textContent = 'Wipe your save and start fresh with a new country.';
+    restart.appendChild(restartIntro);
+
+    const restartBtn = document.createElement('button');
+    restartBtn.type = 'button';
+    restartBtn.className = 'shg-actions__button';
+    restartBtn.style.background = '#fca5a5';
+    restartBtn.style.color = '#0f172a';
+    restartBtn.style.borderColor = '#fca5a5';
+    restartBtn.textContent = '🔄 Restart Game';
+    restartBtn.setAttribute('data-tooltip', 'Delete your save and pick a new country.');
+    restartBtn.addEventListener('click', () => {
+      this.showDialog({
+        title: 'Restart Game?',
+        body: 'This will permanently delete your save. Are you sure?',
+        options: [
+          {
+            label: 'Yes, restart',
+            action: () => {
+              try { localStorage.removeItem('sun_harvester_save'); } catch {}
+              try { localStorage.removeItem('sun_harvester_tutorial_complete'); } catch {}
+              window.location.reload();
+            },
+          },
+          { label: 'Cancel', action: () => {} },
+        ],
+      });
+    });
+    restart.appendChild(restartBtn);
+    body.appendChild(restart);
   }
 
   private downloadSave(state: GameState): void {
