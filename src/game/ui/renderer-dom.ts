@@ -236,6 +236,8 @@ export class DomRenderer implements Renderer {
     this.renderTechTree(state);
     this.renderCrafting(state);
     this.renderWorld(state);
+    this.renderEarth(state);
+    this.renderMoon(state);
     this.renderMars(state);
     this.renderAsteroids(state);
     this.renderSun(state);
@@ -508,6 +510,7 @@ export class DomRenderer implements Renderer {
     grid.appendChild(this.buildWeatherCard(state));
     grid.appendChild(this.buildEraProgressCard(state));
     grid.appendChild(this.buildMaterialsCard(state));
+    grid.appendChild(this.buildActionsCard(state));
     body.appendChild(grid);
   }
 
@@ -833,6 +836,70 @@ export class DomRenderer implements Renderer {
     }
 
     card.appendChild(list);
+    return card;
+  }
+
+  private buildActionsCard(state: GameState): HTMLElement {
+    const card = this.buildCard('Quick Actions');
+
+    const actions = [
+      {
+        label: '⚡ Build Coal Plant ($150)',
+        tooltip: 'Build a coal power plant. Consumes coal, generates energy.',
+        action: { type: 'build_power_plant', payload: { type: 'coal', cost: 150 } },
+        disabled: state.resources.currency < 150,
+      },
+      {
+        label: '☀️ Build Solar Panel ($100)',
+        tooltip: 'Build a solar panel. Output varies with weather.',
+        action: { type: 'build_solar_panel', payload: { locationId: 'arizona', cost: 100 } },
+        disabled: state.resources.currency < 100,
+      },
+      {
+        label: '⛏️ Build Coal Mine ($80)',
+        tooltip: 'Mine coal for power plant fuel.',
+        action: { type: 'build_mine', payload: { materialType: 'coal', cost: 80, depositQuality: 0.7 } },
+        disabled: state.resources.currency < 80,
+      },
+      {
+        label: '⛏️ Build Iron Mine ($80)',
+        tooltip: 'Mine iron ore for steel production.',
+        action: { type: 'build_mine', payload: { materialType: 'iron_ore', cost: 80, depositQuality: 0.6 } },
+        disabled: state.resources.currency < 80,
+      },
+      {
+        label: '🏭 Build Distribution ($200)',
+        tooltip: 'Increases energy-to-revenue conversion rate.',
+        action: { type: 'build_distribution_network', payload: { cost: 200 } },
+        disabled: state.resources.currency < 200,
+      },
+      {
+        label: '🔫 Build Weapons Factory',
+        tooltip: 'Produces conventional arms to defend against the UN.',
+        action: { type: 'build_weapons_factory', payload: { producing: 'conventional' } },
+        disabled: false,
+      },
+    ];
+
+    const grid = document.createElement('div');
+    grid.className = 'shg-actions__grid';
+    grid.setAttribute('role', 'group');
+    grid.setAttribute('aria-label', 'Build actions');
+
+    for (const item of actions) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'shg-actions__button';
+      btn.textContent = item.label;
+      btn.disabled = item.disabled;
+      btn.setAttribute('data-tooltip', item.tooltip);
+      btn.addEventListener('click', () => {
+        this.dispatchAction(item.action);
+      });
+      grid.appendChild(btn);
+    }
+
+    card.appendChild(grid);
     return card;
   }
 
@@ -1642,6 +1709,194 @@ export class DomRenderer implements Renderer {
   }
 
   // ---------- world / political panel ----------
+
+  // ---------- Earth panel ----------
+
+  private renderEarth(state: GameState): void {
+    const panel = this.scenePanels.get('earth');
+    if (!panel) return;
+    const body = panel.querySelector<HTMLElement>('[data-role="panel-body"]');
+    if (!body) return;
+
+    body.replaceChildren();
+
+    const card = this.buildCard('Earth Operations');
+    card.appendChild(this.buildLineItem({
+      label: 'Public Approval',
+      value: `${state.opposition.publicApproval.toFixed(0)}%`,
+      tone: state.opposition.publicApproval > 50 ? 'positive' : 'negative',
+      tooltip: 'Keep approval above 30% or construction is blocked.',
+    }));
+    card.appendChild(this.buildLineItem({
+      label: 'UN Hostility',
+      value: `${state.opposition.unHostility.toFixed(0)}%`,
+      tone: state.opposition.unHostility > 50 ? 'negative' : undefined,
+      tooltip: 'High hostility triggers UN attacks.',
+    }));
+    card.appendChild(this.buildLineItem({
+      label: 'Military Power',
+      value: formatNumber(state.weapons.militaryPower),
+      tooltip: 'Total composite military score.',
+    }));
+
+    // War actions.
+    const warSection = document.createElement('div');
+    warSection.className = 'shg-actions__grid';
+    warSection.style.marginTop = '12px';
+
+    const warActions = [
+      {
+        label: '⚔️ Declare War (Attack UN)',
+        tooltip: 'Use military force against the UN. Requires military power > UN power level.',
+        action: { type: 'countermeasure', payload: { type: 'military_defense' } },
+        disabled: state.weapons.militaryPower <= state.opposition.unPowerLevel,
+      },
+      {
+        label: '🕊️ Diplomatic Deception',
+        tooltip: 'Reduce UN hostility by 10 through misdirection.',
+        action: { type: 'countermeasure', payload: { type: 'diplomatic_deception' } },
+        disabled: false,
+      },
+      {
+        label: '📢 Education Campaign ($500)',
+        tooltip: 'Invest in public education to raise approval.',
+        action: { type: 'countermeasure', payload: { type: 'education_campaign', investment: 500 } },
+        disabled: state.resources.currency < 500,
+      },
+      {
+        label: '💰 Economic Leverage',
+        tooltip: 'Reduce active sanction severity by 25%.',
+        action: { type: 'countermeasure', payload: { type: 'economic_leverage' } },
+        disabled: state.opposition.activeSanctions.length === 0,
+      },
+    ];
+
+    for (const item of warActions) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'shg-actions__button';
+      btn.textContent = item.label;
+      btn.disabled = item.disabled;
+      btn.setAttribute('data-tooltip', item.tooltip);
+      btn.addEventListener('click', () => this.dispatchAction(item.action));
+      warSection.appendChild(btn);
+    }
+
+    card.appendChild(warSection);
+    body.appendChild(card);
+  }
+
+  // ---------- Moon panel ----------
+
+  private renderMoon(state: GameState): void {
+    const panel = this.scenePanels.get('moon');
+    if (!panel) return;
+    const body = panel.querySelector<HTMLElement>('[data-role="panel-body"]');
+    if (!body) return;
+
+    body.replaceChildren();
+
+    // Orbital platforms card.
+    const orbitalCard = this.buildCard('Orbital Platforms');
+    orbitalCard.appendChild(this.buildLineItem({
+      label: 'Platforms',
+      value: formatNumber(state.space.orbitalPlatforms.length),
+      tooltip: 'Space-based solar collectors and stations.',
+    }));
+    orbitalCard.appendChild(this.buildLineItem({
+      label: 'Space Solar Output',
+      value: `${formatNumber(state.space.orbitalPlatforms.filter(p => p.type === 'solar_collector').reduce((s, p) => s + p.output, 0))}/s`,
+      tone: 'positive',
+      tooltip: 'Energy from orbital solar collectors (no weather penalty!).',
+    }));
+
+    const buildPlatformBtn = document.createElement('button');
+    buildPlatformBtn.type = 'button';
+    buildPlatformBtn.className = 'shg-actions__button';
+    buildPlatformBtn.textContent = '🛰️ Build Orbital Platform (10 fuel + 20 steel)';
+    buildPlatformBtn.disabled = (state.materials.stockpiles.fuel ?? 0) < 10 || (state.materials.stockpiles.steel ?? 0) < 20;
+    buildPlatformBtn.setAttribute('data-tooltip', 'Build a space-based solar collector with no weather penalty.');
+    buildPlatformBtn.addEventListener('click', () => this.dispatchAction({
+      type: 'build_orbital_platform',
+      payload: { type: 'solar_collector', output: 15 },
+    }));
+    orbitalCard.appendChild(buildPlatformBtn);
+    body.appendChild(orbitalCard);
+
+    // Alien Contact card.
+    const alienCard = this.buildCard('Alien Contact 👽');
+    const signals = state.alien?.signals ?? [];
+    const uninvestigated = signals.filter(s => !s.investigated && !s.outcome);
+
+    alienCard.appendChild(this.buildLineItem({
+      label: 'Relations Score',
+      value: `${state.alien?.relationsScore ?? 0}`,
+      tone: (state.alien?.relationsScore ?? 0) > 0 ? 'positive' : (state.alien?.relationsScore ?? 0) < 0 ? 'negative' : undefined,
+      tooltip: 'Alien disposition toward you. -100 to +100.',
+    }));
+    alienCard.appendChild(this.buildLineItem({
+      label: 'Signals Detected',
+      value: `${signals.length}`,
+      tooltip: 'Total alien signals encountered during space mining.',
+    }));
+    alienCard.appendChild(this.buildLineItem({
+      label: 'Ignored Signals',
+      value: `${state.alien?.ignoredSignals ?? 0} / 5`,
+      tooltip: 'Forced contact triggers at 5 ignored signals.',
+    }));
+
+    if (uninvestigated.length > 0) {
+      const signalId = uninvestigated[0].id;
+
+      const contactActions = document.createElement('div');
+      contactActions.className = 'shg-actions__grid';
+      contactActions.style.marginTop = '12px';
+
+      const investigateBtn = document.createElement('button');
+      investigateBtn.type = 'button';
+      investigateBtn.className = 'shg-actions__button';
+      investigateBtn.textContent = '🔍 Investigate Signal';
+      investigateBtn.setAttribute('data-tooltip', 'Investigate the alien signal. Outcome depends on relations.');
+      investigateBtn.addEventListener('click', () => this.dispatchAction({
+        type: 'investigate_signal',
+        payload: { signalId },
+      }));
+      contactActions.appendChild(investigateBtn);
+
+      const broadcastBtn = document.createElement('button');
+      broadcastBtn.type = 'button';
+      broadcastBtn.className = 'shg-actions__button';
+      broadcastBtn.textContent = '📡 Broadcast Response';
+      broadcastBtn.setAttribute('data-tooltip', 'Broadcast a friendly response (+10 relations bonus).');
+      broadcastBtn.addEventListener('click', () => this.dispatchAction({
+        type: 'broadcast_response',
+        payload: { signalId },
+      }));
+      contactActions.appendChild(broadcastBtn);
+
+      const ignoreBtn = document.createElement('button');
+      ignoreBtn.type = 'button';
+      ignoreBtn.className = 'shg-actions__button';
+      ignoreBtn.textContent = '🚫 Ignore Signal';
+      ignoreBtn.setAttribute('data-tooltip', 'Ignore the signal (-5 relations). 5 ignores = forced contact.');
+      ignoreBtn.addEventListener('click', () => this.dispatchAction({
+        type: 'ignore_signal',
+        payload: { signalId },
+      }));
+      contactActions.appendChild(ignoreBtn);
+
+      alienCard.appendChild(contactActions);
+    } else {
+      const noSignals = document.createElement('p');
+      noSignals.className = 'shg-tech__empty';
+      noSignals.textContent = signals.length === 0
+        ? 'No alien signals yet. Claim asteroid territories to start detecting signals.'
+        : 'No pending signals. Continue mining to detect more.';
+      alienCard.appendChild(noSignals);
+    }
+
+    body.appendChild(alienCard);
+  }
 
   /**
    * Render the World scene: shows player nation, all foreign countries with

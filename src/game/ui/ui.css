@@ -989,3 +989,41 @@
 .shg-three-overlay canvas:active {
   cursor: grabbing;
 }
+
+/* Quick Actions grid --------------------------------------------------- */
+
+.shg-actions__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.shg-actions__button {
+  background: var(--shg-surface-2);
+  color: var(--shg-text);
+  border: 1px solid var(--shg-border);
+  padding: 10px 12px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms, border-color 150ms;
+}
+
+.shg-actions__button:hover:not(:disabled) {
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border-color: var(--shg-accent);
+}
+
+.shg-actions__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.shg-actions__button:focus-visible {
+  outline: 2px solid var(--shg-focus);
+  outline-offset: 2px;
+}
