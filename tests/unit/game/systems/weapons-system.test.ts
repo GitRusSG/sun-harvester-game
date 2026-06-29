@@ -59,7 +59,7 @@ describe('WeaponsSystem', () => {
       // Should produce 2 conventional (rate=2, deltaTicks=1)
       const arsenalMutation = update.mutations?.find((m) => m.path === 'weapons.arsenal.conventional');
       expect(arsenalMutation).toBeDefined();
-      expect(arsenalMutation!.value).toBe(2);
+      expect(arsenalMutation!.value).toBe(12);
     });
 
     it('should not produce when materials are insufficient', () => {
@@ -156,9 +156,9 @@ describe('WeaponsSystem', () => {
         (m) => m.path === 'weapons.arsenal.missile',
       );
       expect(conventionalMutation).toBeDefined();
-      expect(conventionalMutation!.value).toBe(1);
+      expect(conventionalMutation!.value).toBe(11);
       expect(missileMutation).toBeDefined();
-      expect(missileMutation!.value).toBe(1);
+      expect(missileMutation!.value).toBe(3);
     });
   });
 
@@ -292,7 +292,7 @@ describe('WeaponsSystem', () => {
         (m) => m.path === 'weapons.arsenal.conventional',
       );
       expect(arsenalMutation).toBeDefined();
-      expect(arsenalMutation!.value).toBe(3);
+      expect(arsenalMutation!.value).toBe(13);
 
       // All steel should be consumed
       expect(update.materials?.stockpiles?.steel).toBe(0);

@@ -243,6 +243,10 @@ export class GameShell {
   }
 
   private renderPanel(id: string, state: GameState): void {
+    if (id.startsWith('country_')) {
+      this.renderCountryPanel(id, state);
+      return;
+    }
     switch (id) {
       case 'dashboard': this.renderDashboard(state); break;
       case 'build': this.renderBuild(state); break;
@@ -459,24 +463,105 @@ export class GameShell {
   }
 
   private renderEarthPanel(state: GameState): void {
-    this.panelTitle.textContent = '🌍 Earth — War & Politics';
+    this.panelTitle.textContent = '🌍 Earth — World Map & Military';
     const btn = (label: string, action: ActionPayload, disabled = false) =>
       `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}</button>`;
 
+    const playerCountry = state.country;
+    const controlled = new Set(state.political.installedPoliticians);
+    const allCountries = ['usa', 'china', 'russia', 'india', 'germany', 'japan', 'uk', 'france', 'south_korea', 'brazil'] as const;
+
+    // Map display.
+    let mapHtml = '<div class="gs-world-map">';
+    for (const c of allCountries) {
+      const isPlayer = c === playerCountry;
+      const isControlled = controlled.has(c);
+      const influence = state.political.influence[c] ?? 0;
+      let colorClass = 'gs-map-red'; // UN controlled (default)
+      if (isPlayer) colorClass = 'gs-map-green';
+      else if (isControlled) colorClass = 'gs-map-green';
+      else if (influence > 30) colorClass = 'gs-map-yellow';
+
+      const name = COUNTRY_PROFILES[c]?.name ?? c;
+      const tag = isPlayer ? '(YOU)' : isControlled ? '(YOURS)' : `${influence.toFixed(0)}%`;
+      mapHtml += `<button class="gs-map-country ${colorClass}" data-open="country_${c}">${name}<br><small>${tag}</small></button>`;
+    }
+    mapHtml += '</div>';
+
+    // Your country facilities.
+    const labCount = state.statistics.totalResearchCompleted;
+    const facilitiesHtml = `
+      <h3 class="gs-section-title">Your Facilities (${COUNTRY_PROFILES[playerCountry]?.name})</h3>
+      <div class="gs-stat-grid">
+        <div class="gs-stat"><span class="gs-stat-label">🔬 Research Labs</span><span class="gs-stat-value">${labCount}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">🔫 Arms Centers</span><span class="gs-stat-value">${state.weapons.factories.length}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">☀️ Solar Centers</span><span class="gs-stat-value">${state.energy.solarPanels.length}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">🏭 Power Plants</span><span class="gs-stat-value">${state.energy.powerPlants.length}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">⛏️ Mines</span><span class="gs-stat-value">${state.infrastructure.mines.length}</span></div>
+      </div>
+    `;
+
+    // Military base section.
+    const soldiers = Math.floor(state.weapons.militaryPower * 10); // 10 soldiers per power point
+    const arsenal = state.weapons.arsenal;
+    const militaryHtml = `
+      <h3 class="gs-section-title">🎖️ Military Base</h3>
+      <div class="gs-stat-grid">
+        <div class="gs-stat"><span class="gs-stat-label">Total Power</span><span class="gs-stat-value">${formatNumber(state.weapons.militaryPower)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Soldiers</span><span class="gs-stat-value">${formatNumber(soldiers)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">🔫 Rifles</span><span class="gs-stat-value">${arsenal.conventional} (1 soldier each)</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">🚀 Missiles</span><span class="gs-stat-value">${arsenal.missile} (5 soldiers each)</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">💻 Cyber</span><span class="gs-stat-value">${arsenal.cyber} (3 soldiers each)</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">⚡ Energy Wpns</span><span class="gs-stat-value">${arsenal.energy} (10 soldiers each)</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">🛰️ Orbital</span><span class="gs-stat-value">${arsenal.orbital} (20 soldiers each)</span></div>
+      </div>
+      <p class="gs-muted">Soldiers assigned: ${arsenal.conventional * 1 + arsenal.missile * 5 + arsenal.cyber * 3 + arsenal.energy * 10 + arsenal.orbital * 20} / ${soldiers} available</p>
+      <div class="gs-action-list">
+        ${btn('🔫 Produce Rifles (1 steel)', { type: 'build_weapons_factory', payload: { producing: 'conventional' } })}
+        ${btn('⚔️ Attack UN Forces', { type: 'countermeasure', payload: { type: 'military_defense' } }, state.weapons.militaryPower <= state.opposition.unPowerLevel)}
+        ${btn('🕊️ Diplomatic Deception', { type: 'countermeasure', payload: { type: 'diplomatic_deception' } })}
+        ${btn('📢 Education Campaign ($500)', { type: 'countermeasure', payload: { type: 'education_campaign', investment: 500 } }, state.resources.currency < 500)}
+      </div>
+    `;
+
+    this.panelContent.innerHTML = `
+      <h3 class="gs-section-title">World Map</h3>
+      <p class="gs-muted">🟢 You/Controlled | 🟡 Influenced | 🔴 UN territory. Click a country to interact.</p>
+      ${mapHtml}
+      ${facilitiesHtml}
+      ${militaryHtml}
+    `;
+  }
+
+  /** Panel for interacting with a specific foreign country. */
+  private renderCountryPanel(countryId: string, state: GameState): void {
+    const id = countryId.replace('country_', '') as CountryId;
+    const profile = COUNTRY_PROFILES[id];
+    if (!profile || id === state.country) {
+      this.panelTitle.textContent = '🌍 Your Country';
+      this.panelContent.innerHTML = '<p class="gs-info">This is your home country. Use the Build panel to develop it.</p>';
+      return;
+    }
+
+    const influence = state.political.influence[id] ?? 0;
+    const isControlled = state.political.installedPoliticians.includes(id);
+    const btn = (label: string, action: ActionPayload, disabled = false) =>
+      `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}</button>`;
+
+    this.panelTitle.textContent = `🎯 ${profile.name}`;
     this.panelContent.innerHTML = `
       <div class="gs-stat-grid">
-        <div class="gs-stat"><span class="gs-stat-label">Approval</span><span class="gs-stat-value">${state.opposition.publicApproval.toFixed(0)}%</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">UN Hostility</span><span class="gs-stat-value gs-negative">${state.opposition.unHostility.toFixed(0)}%</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">UN Power</span><span class="gs-stat-value">${state.opposition.unPowerLevel.toFixed(0)}</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">Your Military</span><span class="gs-stat-value">${formatNumber(state.weapons.militaryPower)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Influence</span><span class="gs-stat-value">${influence.toFixed(1)}%</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Status</span><span class="gs-stat-value">${isControlled ? '🟢 Controlled' : influence >= 75 ? '🟡 Ripe for takeover' : '🔴 Independent'}</span></div>
       </div>
-      <h3 class="gs-section-title">War Actions</h3>
+      <h3 class="gs-section-title">Operations (cost $100 each)</h3>
       <div class="gs-action-list">
-        ${btn('⚔️ Attack UN (Military)', { type: 'countermeasure', payload: { type: 'military_defense' } }, state.weapons.militaryPower <= state.opposition.unPowerLevel)}
-        ${btn('🕊️ Diplomatic Deception (-10 hostility)', { type: 'countermeasure', payload: { type: 'diplomatic_deception' } })}
-        ${btn('📢 Education Campaign ($500)', { type: 'countermeasure', payload: { type: 'education_campaign', investment: 500 } }, state.resources.currency < 500)}
-        ${btn('💰 Economic Leverage', { type: 'countermeasure', payload: { type: 'economic_leverage' } }, state.opposition.activeSanctions.length === 0)}
+        ${btn('💰 Economic Aid (+0.5/tick)', { type: 'invest_influence', payload: { country: id, method: 'economic_aid', amount: 100 } }, state.resources.currency < 100)}
+        ${btn('📺 Propaganda (+0.3/tick)', { type: 'invest_influence', payload: { country: id, method: 'propaganda', amount: 100 } }, state.resources.currency < 100)}
+        ${btn('🏢 Corporate Infiltration (+0.8/tick)', { type: 'invest_influence', payload: { country: id, method: 'corporate_infiltration', amount: 100 } }, state.resources.currency < 100)}
+        ${btn('🕵️ Intelligence (+1.0/tick)', { type: 'invest_influence', payload: { country: id, method: 'intelligence', amount: 100 } }, state.resources.currency < 100)}
       </div>
+      <p class="gs-muted">At 75% influence, a politician is auto-installed. Control 5+ countries for World Domination.</p>
     `;
   }
 

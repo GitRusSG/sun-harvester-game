@@ -128,8 +128,8 @@ export function createInitialState(country: CountryId): GameState {
     militaryPower: profile.startingMilitary,
     factories: [],
     arsenal: {
-      conventional: 0,
-      missile: 0,
+      conventional: 10,
+      missile: 2,
       cyber: 0,
       energy: 0,
       orbital: 0,
@@ -317,8 +317,8 @@ export function createNewGame(country: CountryId): GameState {
     militaryPower: profile.startingMilitary,
     factories: [],
     arsenal: {
-      conventional: 0,
-      missile: 0,
+      conventional: 10,
+      missile: 2,
       cyber: 0,
       energy: 0,
       orbital: 0,

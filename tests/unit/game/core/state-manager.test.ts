@@ -154,7 +154,7 @@ describe('applyUpdate', () => {
     };
     const newState = applyUpdate(state, update);
     expect(newState.weapons.arsenal.missile).toBe(5);
-    expect(newState.weapons.arsenal.conventional).toBe(0); // unchanged
+    expect(newState.weapons.arsenal.conventional).toBe(10); // unchanged
   });
 
   it('returns unchanged state for empty update', () => {
