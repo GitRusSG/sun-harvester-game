@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+
+<head>
+    <title>7 Boom!</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <div class="center">
+        <h1>7 Boom</h1>
+        <% if (isBoom) { %>
+            <p style="font-size: 96px;">💥 BOOM! 💥</p>
+            <p>The number <strong><%= num %></strong> is a BOOM number!</p>
+        <% } else { %>
+            <p>The number <strong><%= num %></strong> is safe... no boom here. 😌</p>
+        <% } %>
+    </div>
+</body>
+
+</html>

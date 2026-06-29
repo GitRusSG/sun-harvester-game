@@ -1,0 +1,991 @@
+/*
+ * Sun Harvester UI baseline styles.
+ *
+ * Color tokens below are chosen to satisfy WCAG 2.1 AA contrast (4.5:1 for
+ * body text, 3:1 for large text and UI components) against their intended
+ * backgrounds. Spot-check ratios in comments use sRGB luminance.
+ *
+ * Visual polish is intentionally minimal — these styles establish layout
+ * and accessibility primitives that later UI tasks build on.
+ */
+
+:root {
+  /* Surface tokens */
+  --shg-bg: #0f172a;          /* slate-900 */
+  --shg-surface: #1e293b;     /* slate-800 */
+  --shg-surface-2: #334155;   /* slate-700 */
+  --shg-border: #475569;      /* slate-600 */
+
+  /* Text tokens */
+  --shg-text: #f8fafc;        /* slate-50 — contrast vs --shg-bg ≈ 16:1 */
+  --shg-text-muted: #cbd5e1;  /* slate-300 — contrast vs --shg-bg ≈ 11:1 */
+
+  /* Accent / interactive */
+  --shg-accent: #fbbf24;      /* amber-400 — contrast vs --shg-bg ≈ 10:1 */
+  --shg-accent-ink: #0f172a;  /* dark text on amber backgrounds */
+  --shg-focus: #60a5fa;       /* blue-400 — high-contrast focus ring */
+
+  /* Notification palettes (all text uses --shg-accent-ink for ≥4.5:1) */
+  --shg-info-bg: #93c5fd;      /* blue-300 */
+  --shg-success-bg: #86efac;   /* green-300 */
+  --shg-warning-bg: #fcd34d;   /* amber-300 */
+  --shg-error-bg: #fca5a5;     /* red-300 */
+}
+
+.shg-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--shg-bg);
+  color: var(--shg-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.shg-header {
+  padding: 12px 20px;
+  background: var(--shg-surface);
+  border-bottom: 1px solid var(--shg-border);
+}
+
+.shg-header__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--shg-text);
+}
+
+.shg-nav {
+  background: var(--shg-surface);
+  border-bottom: 1px solid var(--shg-border);
+}
+
+.shg-nav__tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.shg-nav__tab {
+  background: transparent;
+  color: var(--shg-text);
+  border: 1px solid transparent;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.shg-nav__tab:hover {
+  background: var(--shg-surface-2);
+}
+
+.shg-nav__tab[aria-selected='true'] {
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border-color: var(--shg-accent);
+}
+
+.shg-nav__tab:focus-visible,
+.shg-dialog__button:focus-visible,
+.shg-notification__close:focus-visible {
+  outline: 2px solid var(--shg-focus);
+  outline-offset: 2px;
+}
+
+.shg-main {
+  flex: 1 1 auto;
+  padding: 20px;
+  overflow: auto;
+}
+
+.shg-panel {
+  background: var(--shg-surface);
+  border: 1px solid var(--shg-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.shg-panel[hidden] {
+  display: none;
+}
+
+.shg-panel__heading {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--shg-text);
+}
+
+.shg-panel__body {
+  color: var(--shg-text-muted);
+}
+
+/* Notifications --------------------------------------------------------- */
+
+.shg-notifications {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.shg-notification {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  color: var(--shg-accent-ink);
+  pointer-events: auto;
+}
+
+.shg-notification--info { background: var(--shg-info-bg); }
+.shg-notification--success { background: var(--shg-success-bg); }
+.shg-notification--warning { background: var(--shg-warning-bg); }
+.shg-notification--error { background: var(--shg-error-bg); }
+
+.shg-notification__text {
+  flex: 1 1 auto;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.shg-notification__close {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--shg-accent-ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.shg-notification__close:hover {
+  background: rgba(15, 23, 42, 0.15);
+}
+
+/* Tooltip --------------------------------------------------------------- */
+
+.shg-tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: var(--shg-surface-2);
+  color: var(--shg-text);
+  border: 1px solid var(--shg-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 1.3;
+  max-width: 260px;
+  z-index: 1100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Dialog ---------------------------------------------------------------- */
+
+.shg-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1200;
+}
+
+.shg-dialog {
+  background: var(--shg-surface);
+  color: var(--shg-text);
+  border: 1px solid var(--shg-border);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.shg-dialog__title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.shg-dialog__body {
+  margin: 0 0 16px;
+  color: var(--shg-text-muted);
+  line-height: 1.45;
+}
+
+.shg-dialog__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.shg-dialog__button {
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border: 1px solid var(--shg-accent);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.shg-dialog__button:hover {
+  filter: brightness(1.05);
+}
+
+/* Dashboard ------------------------------------------------------------- */
+
+.shg-dashboard__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--shg-surface-2);
+  border: 1px solid var(--shg-border);
+  border-radius: 8px;
+}
+
+.shg-stat {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.shg-stat__label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--shg-text-muted);
+}
+
+.shg-stat__value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--shg-text);
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+.shg-dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.shg-card {
+  background: var(--shg-surface-2);
+  border: 1px solid var(--shg-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--shg-text);
+}
+
+.shg-card__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--shg-text-muted);
+}
+
+.shg-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.shg-line__label {
+  color: var(--shg-text-muted);
+}
+
+.shg-line__value {
+  color: var(--shg-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* Positive/negative tones use accessible greens/reds against dark surface.
+ * green-300 (#86efac) vs slate-700 (#334155) ≈ 8.4:1 contrast.
+ * red-300 (#fca5a5) vs slate-700 (#334155) ≈ 6.7:1 contrast. */
+.shg-line__value--positive { color: #86efac; }
+.shg-line__value--negative { color: #fca5a5; }
+
+/* Progress bars (used for energy storage and era progress). */
+.shg-bar {
+  position: relative;
+  width: 100%;
+  height: 18px;
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.shg-bar__fill {
+  height: 100%;
+  background: var(--shg-accent);
+  transition: width 250ms ease-out;
+}
+
+.shg-bar__fill--era {
+  background: #60a5fa; /* blue-400, contrasts with amber accent for distinction */
+}
+
+.shg-bar__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shg-accent-ink);
+  text-shadow: 0 0 4px rgba(248, 250, 252, 0.7);
+}
+
+/* Weather card. */
+.shg-weather__banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 6px;
+}
+
+.shg-weather__icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.shg-weather__label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--shg-text);
+}
+
+/* Materials list. */
+.shg-materials__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
+
+.shg-materials__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.shg-materials__name {
+  color: var(--shg-text-muted);
+}
+
+.shg-materials__value {
+  color: var(--shg-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* Tech tree panel -------------------------------------------------------- */
+
+.shg-tech__empty,
+.shg-craft__empty {
+  margin: 0;
+  color: var(--shg-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.shg-tech__tree-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.shg-tech__tree-tab {
+  background: var(--shg-surface-2);
+  color: var(--shg-text);
+  border: 1px solid var(--shg-border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.shg-tech__tree-tab:hover {
+  filter: brightness(1.1);
+}
+
+.shg-tech__tree-tab[aria-selected='true'] {
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border-color: var(--shg-accent);
+}
+
+.shg-tech__tree-tab:focus-visible,
+.shg-tech__node-button:focus-visible,
+.shg-craft__button:focus-visible {
+  outline: 2px solid var(--shg-focus);
+  outline-offset: 2px;
+}
+
+.shg-tech__synergy-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shg-tech__synergy-item {
+  font-size: 13px;
+  color: var(--shg-text);
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.shg-tech__node-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shg-tech__node {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 6px;
+  color: var(--shg-text);
+}
+
+.shg-tech__node--locked {
+  opacity: 0.7;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.shg-tech__node--completed {
+  border-color: #86efac;
+}
+
+.shg-tech__node--researching {
+  border-color: var(--shg-focus);
+}
+
+.shg-tech__node--available {
+  border-color: var(--shg-accent);
+}
+
+.shg-tech__node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.shg-tech__node-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.shg-tech__node-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--shg-border);
+  background: var(--shg-surface);
+  color: var(--shg-text-muted);
+}
+
+.shg-tech__node-badge--available {
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border-color: var(--shg-accent);
+}
+
+.shg-tech__node-badge--researching {
+  background: var(--shg-focus);
+  color: var(--shg-accent-ink);
+  border-color: var(--shg-focus);
+}
+
+.shg-tech__node-badge--completed {
+  background: #86efac;
+  color: var(--shg-accent-ink);
+  border-color: #86efac;
+}
+
+.shg-tech__node-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--shg-text-muted);
+  line-height: 1.4;
+}
+
+.shg-tech__node-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--shg-text-muted);
+}
+
+.shg-tech__node-meta--positive {
+  color: #86efac;
+}
+
+.shg-tech__node-button {
+  align-self: flex-start;
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border: 1px solid var(--shg-accent);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.shg-tech__node-button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.shg-tech__node-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Crafting panel --------------------------------------------------------- */
+
+.shg-craft__queue-list,
+.shg-craft__recipe-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shg-craft__queue-item,
+.shg-craft__recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 6px;
+}
+
+.shg-craft__queue-header,
+.shg-craft__recipe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.shg-craft__queue-name,
+.shg-craft__recipe-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--shg-text);
+}
+
+.shg-craft__queue-time,
+.shg-craft__recipe-time {
+  font-size: 12px;
+  color: var(--shg-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.shg-craft__material-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 4px 8px;
+}
+
+.shg-craft__material {
+  font-size: 12px;
+  padding: 3px 8px;
+  background: var(--shg-surface);
+  border: 1px solid var(--shg-border);
+  border-radius: 4px;
+  color: var(--shg-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* red-300 vs slate-700 ≈ 6.7:1 contrast. */
+.shg-craft__material--missing {
+  color: #fca5a5;
+  border-color: #fca5a5;
+  background: rgba(252, 165, 165, 0.08);
+}
+
+.shg-craft__recipe-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--shg-text-muted);
+}
+
+.shg-craft__recipe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.shg-craft__button {
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border: 1px solid var(--shg-accent);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.shg-craft__button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.shg-craft__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shg-craft__button--toggle {
+  background: var(--shg-surface-2);
+  color: var(--shg-text);
+  border-color: var(--shg-border);
+}
+
+.shg-craft__button--toggle.shg-craft__button--on {
+  background: #86efac;
+  color: var(--shg-accent-ink);
+  border-color: #86efac;
+}
+
+/* Country selection screen ---------------------------------------------- */
+
+.shg-country-select {
+  min-height: 100vh;
+  background: var(--shg-bg);
+  color: var(--shg-text);
+  padding: 32px 24px;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shg-country-select__heading {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.shg-country-select__intro {
+  margin: 0;
+  color: var(--shg-text-muted);
+  font-size: 15px;
+  max-width: 720px;
+  line-height: 1.5;
+}
+
+.shg-country-select__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.shg-country-card {
+  background: var(--shg-surface);
+  border: 1px solid var(--shg-border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--shg-text);
+}
+
+.shg-country-card__name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.shg-country-card__desc {
+  margin: 0;
+  color: var(--shg-text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.shg-country-card__subheading {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--shg-text-muted);
+}
+
+.shg-country-card__buffs,
+.shg-country-card__resources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shg-country-card__buff {
+  font-size: 13px;
+  padding: 4px 8px;
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 4px;
+  color: var(--shg-text);
+}
+
+.shg-country-card__resources li {
+  font-size: 13px;
+  color: var(--shg-text-muted);
+}
+
+.shg-country-card__select {
+  margin-top: auto;
+  background: var(--shg-accent);
+  color: var(--shg-accent-ink);
+  border: 1px solid var(--shg-accent);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shg-country-card__select:hover {
+  filter: brightness(1.05);
+}
+
+.shg-country-card__select:focus-visible {
+  outline: 2px solid var(--shg-focus);
+  outline-offset: 2px;
+}
+
+/* World / political panel ---------------------------------------------- */
+
+.shg-world__country-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shg-world__country {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 6px;
+  color: var(--shg-text);
+}
+
+.shg-world__country--player {
+  border-color: var(--shg-accent);
+}
+
+.shg-world__country--controlled {
+  border-color: #86efac;
+}
+
+.shg-world__country-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.shg-world__country-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.shg-world__country-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.shg-world__method-button {
+  background: var(--shg-surface-2);
+  color: var(--shg-text);
+  border: 1px solid var(--shg-border);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.shg-world__method-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.shg-world__method-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shg-world__method-button:focus-visible {
+  outline: 2px solid var(--shg-focus);
+  outline-offset: 2px;
+}
+
+/* Territory and Dyson segment shared lists ----------------------------- */
+
+.shg-territory__list,
+.shg-dyson__segment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shg-territory__item,
+.shg-dyson__segment {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--shg-bg);
+  border: 1px solid var(--shg-border);
+  border-radius: 6px;
+  color: var(--shg-text);
+}
+
+.shg-dyson__segment--completed {
+  border-color: #86efac;
+}
+
+/* Settings / save panel ------------------------------------------------- */
+
+.shg-settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.shg-settings__import {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.shg-settings__import-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.shg-settings__import:focus-within {
+  outline: 2px solid var(--shg-focus);
+  outline-offset: 2px;
+}
+
+/* Three.js spatial overlay --------------------------------------------- */
+
+/*
+ * The WebGL canvas is hosted in this overlay and inserted at the top of the
+ * active spatial panel's body. It renders the solar-system scene as a banner
+ * above that panel's textual cards. The game simulation keeps running during
+ * camera transitions, so this is purely presentational.
+ */
+.shg-three-overlay {
+  position: relative;
+  width: 100%;
+  height: clamp(280px, 45vh, 520px);
+  margin-bottom: 16px;
+  border: 1px solid var(--shg-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #05070f;
+}
+
+.shg-three-overlay[hidden] {
+  display: none;
+}
+
+.shg-three-overlay canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Allow pointer drag/zoom on the canvas without selecting text. */
+  touch-action: none;
+  cursor: grab;
+}
+
+.shg-three-overlay canvas:active {
+  cursor: grabbing;
+}
