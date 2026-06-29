@@ -232,16 +232,21 @@ export class DomRenderer implements Renderer {
     // the placeholder pre-game state does not flash behind the modal screen.
     if (this.countrySelectionRoot) return;
     this.lastState = state;
-    this.renderDashboard(state);
-    this.renderTechTree(state);
-    this.renderCrafting(state);
-    this.renderWorld(state);
-    this.renderEarth(state);
-    this.renderMoon(state);
-    this.renderMars(state);
-    this.renderAsteroids(state);
-    this.renderSun(state);
-    this.renderSettings(state);
+
+    // Only render the currently visible panel to avoid destroying buttons
+    // with event listeners on inactive panels.
+    switch (this.currentScene) {
+      case 'dashboard': this.renderDashboard(state); break;
+      case 'tech': this.renderTechTree(state); break;
+      case 'crafting': this.renderCrafting(state); break;
+      case 'world': this.renderWorld(state); break;
+      case 'earth': this.renderEarth(state); break;
+      case 'moon': this.renderMoon(state); break;
+      case 'mars': this.renderMars(state); break;
+      case 'asteroids': this.renderAsteroids(state); break;
+      case 'sun': this.renderSun(state); break;
+      case 'settings': this.renderSettings(state); break;
+    }
   }
 
   showNotification(message: string, type: NotificationType = 'info'): void {

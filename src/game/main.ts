@@ -118,8 +118,12 @@ function startGame(country: CountryId): void {
     loop.registerSystem(system);
   }
 
-  // Connect render callback.
+  // Connect render callback (throttled to ~2 DOM updates/sec to keep buttons clickable).
+  let lastRenderTime = 0;
   loop.setRenderCallback((currentState) => {
+    const now = performance.now();
+    if (now - lastRenderTime < 500) return;
+    lastRenderTime = now;
     renderer.render(currentState);
     checkEraProgression(loop);
   });
