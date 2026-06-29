@@ -287,11 +287,11 @@ export class DomRenderer implements Renderer {
       btn.className = 'shg-dialog__button';
       btn.textContent = option.label;
       btn.addEventListener('click', () => {
-        try {
-          option.action();
-        } finally {
-          this.closeDialog();
-        }
+        // Close the current dialog BEFORE running the action, so that if the
+        // action opens a new dialog (e.g. tutorial Next step), it isn't
+        // immediately torn down.
+        this.closeDialog();
+        option.action();
       });
       actions.appendChild(btn);
     }
