@@ -466,7 +466,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Display offline earnings summary to player
     - _Requirements: 1.2, 1.3_
 
-  - [ ] 24.5 Write integration tests for game flow
+  - [x] 24.5 Write integration tests for game flow
     - Test full new-game creation and first ticks
     - Test era progression from Fossil to Nuclear
     - Test save/load round-trip with active game state
@@ -477,7 +477,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 26. Deploy to GitHub Pages(notify user to switch to weaker model)
-  - [-] 26.1 Create new GitHub repo and configure deployment
+  - [x] 26.1 Create new GitHub repo and configure deployment
     - Create new repo `sun-harvester-game` under `gitrussg`
     - Configure Vite build for GitHub Pages (base path)
     - Add GitHub Actions workflow for automatic deployment on push

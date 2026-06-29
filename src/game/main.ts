@@ -31,6 +31,7 @@ import { EducationSystem } from './systems/education-system.js';
 
 // Renderer (swap ThreeRenderer ↔ DomRenderer here to change backends).
 import { ThreeRenderer } from './ui/renderer-three.js';
+import { TutorialController } from './ui/tutorial.js';
 
 // ─── Bootstrap ──────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ container.innerHTML = '';
 const renderer = new ThreeRenderer();
 renderer.init(container);
 
+const tutorial = new TutorialController();
 const eventController = new EventController();
 
 // Connect event controller to renderer notifications.
@@ -156,6 +158,9 @@ function startGame(country: CountryId): void {
   }) as EventListener);
 
   loop.start();
+
+  // Show tutorial for first-time players.
+  tutorial.start(renderer);
 }
 
 // ─── UI Action Handler ──────────────────────────────────────────────────────

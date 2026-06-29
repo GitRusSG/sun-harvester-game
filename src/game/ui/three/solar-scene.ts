@@ -81,6 +81,10 @@ export class SolarScene {
   private orbitYaw = 0;
   private orbitPitch = 0.35;
   private orbitDistanceScale = 1;
+  private dragMoved = false;
+
+  /** Callback fired when a celestial body is clicked. */
+  private onBodyClick: ((id: CelestialBodyId) => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -129,6 +133,11 @@ export class SolarScene {
   }
 
   // ---------- public API ----------
+
+  /** Set a callback that fires when the player clicks a celestial body. */
+  setBodyClickHandler(handler: (id: CelestialBodyId) => void): void {
+    this.onBodyClick = handler;
+  }
 
   /** Animate a camera transition from the current body to `id`. */
   focusBody(id: CelestialBodyId): void {
@@ -354,14 +363,24 @@ export class SolarScene {
     group.position.copy(position);
 
     const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(body.bodyRadius, 40, 40),
-      new THREE.MeshStandardMaterial({
-        color: body.color,
-        roughness: 0.85,
-        metalness: 0.05,
-      }),
+      new THREE.SphereGeometry(body.bodyRadius, 64, 64),
+      this.createBodyMaterial(body),
     );
     group.add(mesh);
+
+    // Atmosphere shell for Earth.
+    if (body.id === 'earth') {
+      const atmo = new THREE.Mesh(
+        new THREE.SphereGeometry(body.bodyRadius * 1.025, 48, 48),
+        new THREE.MeshBasicMaterial({
+          color: 0x88bbff,
+          transparent: true,
+          opacity: 0.12,
+          side: THREE.FrontSide,
+        }),
+      );
+      group.add(atmo);
+    }
 
     const markers = new THREE.Group();
     group.add(markers);
@@ -381,6 +400,201 @@ export class SolarScene {
 
     this.scene.add(group);
     this.bodies.set(body.id, { body, group, mesh, markers, position });
+  }
+
+  /**
+   * Creates an appropriate material for a celestial body. Earth and Moon get
+   * procedurally-generated textures for a realistic look; others use flat color.
+   */
+  private createBodyMaterial(body: CelestialBody): THREE.Material {
+    if (body.id === 'earth') {
+      return new THREE.MeshStandardMaterial({
+        map: this.generateEarthTexture(),
+        roughness: 0.9,
+        metalness: 0.0,
+      });
+    }
+    if (body.id === 'moon') {
+      return new THREE.MeshStandardMaterial({
+        map: this.generateMoonTexture(),
+        roughness: 0.95,
+        metalness: 0.0,
+      });
+    }
+    if (body.id === 'mars') {
+      return new THREE.MeshStandardMaterial({
+        map: this.generateMarsTexture(),
+        roughness: 0.92,
+        metalness: 0.0,
+      });
+    }
+    return new THREE.MeshStandardMaterial({
+      color: body.color,
+      roughness: 0.85,
+      metalness: 0.05,
+    });
+  }
+
+  /**
+   * Procedurally generates a simple Earth-like texture using canvas.
+   * Draws oceans (blue), continents (green/brown), ice caps (white).
+   */
+  private generateEarthTexture(): THREE.CanvasTexture {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size / 2;
+    const ctx = canvas.getContext('2d')!;
+
+    // Ocean base.
+    ctx.fillStyle = '#1a5276';
+    ctx.fillRect(0, 0, size, size / 2);
+
+    // Simplified continent shapes using noise-like blobs.
+    const continents = [
+      { x: 0.25, y: 0.35, w: 0.12, h: 0.25, color: '#2e7d32' }, // South America-ish
+      { x: 0.2, y: 0.2, w: 0.08, h: 0.12, color: '#33691e' },   // North America-ish
+      { x: 0.47, y: 0.2, w: 0.1, h: 0.2, color: '#558b2f' },    // Europe/Africa-ish
+      { x: 0.5, y: 0.35, w: 0.08, h: 0.18, color: '#6d4c41' },  // Africa south
+      { x: 0.65, y: 0.25, w: 0.15, h: 0.15, color: '#4e342e' }, // Asia
+      { x: 0.75, y: 0.4, w: 0.1, h: 0.08, color: '#795548' },   // Australia-ish
+      { x: 0.55, y: 0.18, w: 0.08, h: 0.08, color: '#689f38' }, // India-ish
+    ];
+
+    for (const c of continents) {
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      ctx.ellipse(
+        c.x * size, c.y * (size / 2),
+        c.w * size * 0.5, c.h * (size / 2) * 0.5,
+        0, 0, Math.PI * 2,
+      );
+      ctx.fill();
+      // Add some internal detail blobs.
+      for (let i = 0; i < 5; i++) {
+        ctx.fillStyle = `hsl(${80 + Math.random() * 40}, ${40 + Math.random() * 30}%, ${25 + Math.random() * 20}%)`;
+        ctx.beginPath();
+        ctx.ellipse(
+          (c.x + (Math.random() - 0.5) * c.w * 0.6) * size,
+          (c.y + (Math.random() - 0.5) * c.h * 0.6) * (size / 2),
+          c.w * size * 0.15, c.h * (size / 2) * 0.15,
+          Math.random() * Math.PI, 0, Math.PI * 2,
+        );
+        ctx.fill();
+      }
+    }
+
+    // Ice caps.
+    const gradient = ctx.createLinearGradient(0, 0, 0, size / 2);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+    gradient.addColorStop(0.08, 'rgba(255,255,255,0)');
+    gradient.addColorStop(0.92, 'rgba(255,255,255,0)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0.7)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size / 2);
+
+    // Some cloud wisps.
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 30; i++) {
+      ctx.beginPath();
+      ctx.ellipse(
+        Math.random() * size,
+        Math.random() * size / 2,
+        20 + Math.random() * 60,
+        5 + Math.random() * 15,
+        Math.random() * Math.PI, 0, Math.PI * 2,
+      );
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    return texture;
+  }
+
+  /**
+   * Procedurally generates a Moon-like texture (grey with craters).
+   */
+  private generateMoonTexture(): THREE.CanvasTexture {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size / 2;
+    const ctx = canvas.getContext('2d')!;
+
+    // Base grey.
+    ctx.fillStyle = '#8a8a8a';
+    ctx.fillRect(0, 0, size, size / 2);
+
+    // Craters.
+    for (let i = 0; i < 60; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size / 2;
+      const r = 2 + Math.random() * 12;
+      const shade = 60 + Math.floor(Math.random() * 40);
+      ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      // Lighter rim.
+      ctx.strokeStyle = `rgb(${shade + 30},${shade + 30},${shade + 30})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    return texture;
+  }
+
+  /**
+   * Procedurally generates a Mars-like texture (red/orange with darker patches).
+   */
+  private generateMarsTexture(): THREE.CanvasTexture {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size / 2;
+    const ctx = canvas.getContext('2d')!;
+
+    // Base rust.
+    ctx.fillStyle = '#c1440e';
+    ctx.fillRect(0, 0, size, size / 2);
+
+    // Darker surface features.
+    for (let i = 0; i < 40; i++) {
+      const shade = Math.random() > 0.5 ? '#8b2500' : '#a0522d';
+      ctx.fillStyle = shade;
+      ctx.globalAlpha = 0.4 + Math.random() * 0.3;
+      ctx.beginPath();
+      ctx.ellipse(
+        Math.random() * size,
+        Math.random() * size / 2,
+        10 + Math.random() * 30,
+        8 + Math.random() * 20,
+        Math.random() * Math.PI, 0, Math.PI * 2,
+      );
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Polar ice.
+    const gradient = ctx.createLinearGradient(0, 0, 0, size / 2);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.5)');
+    gradient.addColorStop(0.06, 'rgba(255,255,255,0)');
+    gradient.addColorStop(0.94, 'rgba(255,255,255,0)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0.4)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    return texture;
   }
 
   // ---------- camera framing ----------
@@ -426,6 +640,7 @@ export class SolarScene {
 
   private readonly onPointerDown = (e: PointerEvent): void => {
     this.dragging = true;
+    this.dragMoved = false;
     this.lastPointer = { x: e.clientX, y: e.clientY };
   };
 
@@ -433,6 +648,7 @@ export class SolarScene {
     if (!this.dragging || this.transition) return;
     const dx = e.clientX - this.lastPointer.x;
     const dy = e.clientY - this.lastPointer.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) this.dragMoved = true;
     this.lastPointer = { x: e.clientX, y: e.clientY };
     this.orbitYaw -= dx * 0.005;
     this.orbitPitch = THREE.MathUtils.clamp(
@@ -442,8 +658,13 @@ export class SolarScene {
     );
   };
 
-  private readonly onPointerUp = (): void => {
+  private readonly onPointerUp = (e: PointerEvent): void => {
+    if (this.dragging && !this.dragMoved && this.onBodyClick) {
+      // It was a click, not a drag — check if a body was hit.
+      this.handleBodyClick(e);
+    }
     this.dragging = false;
+    this.dragMoved = false;
   };
 
   private readonly onWheel = (e: WheelEvent): void => {
@@ -455,6 +676,33 @@ export class SolarScene {
       2.5,
     );
   };
+
+  /** Raycast from pointer position to find clicked bodies. */
+  private handleBodyClick(e: PointerEvent): void {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera);
+
+    // Collect all body meshes for intersection test.
+    const meshes: Array<{ mesh: THREE.Mesh; id: CelestialBodyId }> = [];
+    for (const [id, visual] of this.bodies) {
+      meshes.push({ mesh: visual.mesh, id });
+    }
+
+    const intersects = raycaster.intersectObjects(meshes.map((m) => m.mesh));
+    if (intersects.length > 0) {
+      const hitMesh = intersects[0].object;
+      const hit = meshes.find((m) => m.mesh === hitMesh);
+      if (hit && this.onBodyClick) {
+        this.onBodyClick(hit.id);
+      }
+    }
+  }
 
   // ---------- render loop ----------
 

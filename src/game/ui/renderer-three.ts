@@ -63,6 +63,16 @@ export class ThreeRenderer implements Renderer {
 
     this.scene = new SolarScene(overlay);
 
+    // When a celestial body is clicked in 3D, navigate to its corresponding panel.
+    // Earth click → World (political map), Moon → Moon panel, etc.
+    this.scene.setBodyClickHandler((id) => {
+      if (id === 'earth') {
+        this.setScene('world');
+      } else {
+        this.setScene(id);
+      }
+    });
+
     // Bridge navigator -> scene camera transitions.
     this.navigator.onChange((next) => {
       this.scene?.focusBody(next);

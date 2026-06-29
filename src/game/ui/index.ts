@@ -28,3 +28,5 @@ export type {
 } from './celestial-nav.js';
 export { SolarScene } from './three/solar-scene.js';
 export type { SurfaceMarker } from './three/solar-scene.js';
+export { TutorialController, TUTORIAL_STEPS } from './tutorial.js';
+export type { TutorialStep } from './tutorial.js';
