@@ -1,0 +1,256 @@
+/* Game Shell styles — minimal, functional, dark theme */
+
+.gs-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.gs-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.gs-canvas canvas:active { cursor: grabbing; }
+
+/* HUD bar at top */
+.gs-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #334155;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  color: #f8fafc;
+  flex-wrap: wrap;
+}
+
+.gs-hud-item {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.gs-hud-btn {
+  background: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.gs-hud-btn:hover { background: #fbbf24; color: #0f172a; border-color: #fbbf24; }
+
+/* Slide-in panel */
+.gs-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 90vw);
+  z-index: 200;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border-left: 1px solid #475569;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, sans-serif;
+  color: #f8fafc;
+  overflow-y: auto;
+}
+
+.gs-panel[hidden] { display: none; }
+
+.gs-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #334155;
+}
+
+.gs-panel-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.gs-panel-close {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.gs-panel-close:hover { background: #334155; color: #fff; }
+
+.gs-panel-content {
+  padding: 16px;
+  flex: 1;
+}
+
+/* Stats grid in panels */
+.gs-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.gs-stat {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gs-stat-label { font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.03em; }
+.gs-stat-value { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gs-positive { color: #86efac; }
+.gs-negative { color: #fca5a5; }
+
+/* Action buttons in panels */
+.gs-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gs-action-btn {
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+
+.gs-action-btn:hover:not(:disabled) {
+  background: #fbbf24;
+  color: #0f172a;
+  border-color: #fbbf24;
+}
+
+.gs-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gs-action-btn.gs-danger {
+  border-color: #fca5a5;
+  color: #fca5a5;
+}
+.gs-action-btn.gs-danger:hover:not(:disabled) {
+  background: #fca5a5;
+  color: #0f172a;
+}
+
+.gs-section-title {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+}
+
+.gs-info { color: #cbd5e1; font-size: 13px; margin: 0 0 12px; }
+.gs-muted { color: #64748b; font-size: 13px; margin: 8px 0; }
+
+/* Tutorial bar (bottom) */
+.gs-tutorial {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(251, 191, 36, 0.95);
+  color: #0f172a;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.gs-tutorial[hidden] { display: none; }
+
+.gs-tutorial-text { flex: 1; }
+
+.gs-tutorial-next,
+.gs-tutorial-skip {
+  background: #0f172a;
+  color: #fbbf24;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gs-tutorial-skip { background: transparent; color: #0f172a; text-decoration: underline; }
+
+/* Country selection overlay */
+.gs-country-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(15, 23, 42, 0.97);
+  padding: 40px 24px;
+  overflow-y: auto;
+  font-family: system-ui, sans-serif;
+  color: #f8fafc;
+}
+
+.gs-country-title { margin: 0 0 8px; font-size: 28px; }
+.gs-country-subtitle { margin: 0 0 24px; color: #94a3b8; }
+
+.gs-country-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.gs-country-card {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: left;
+  font: inherit;
+  color: #f8fafc;
+  cursor: pointer;
+  transition: border-color 150ms;
+}
+
+.gs-country-card:hover {
+  border-color: #fbbf24;
+}
+
+.gs-country-card strong { font-size: 15px; }
+.gs-country-card small { color: #94a3b8; font-size: 12px; }
