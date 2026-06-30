@@ -320,3 +320,104 @@
   border-color: #ef4444;
   color: #fca5a5;
 }
+
+/* Toast notifications */
+.gs-toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 400;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  opacity: 0;
+  transition: opacity 300ms, transform 300ms;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  pointer-events: none;
+}
+
+.gs-toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.gs-toast-info { background: #93c5fd; }
+.gs-toast-success { background: #86efac; }
+.gs-toast-warning { background: #fcd34d; }
+.gs-toast-error { background: #fca5a5; }
+
+/* Build queue bar */
+.gs-queue-bar {
+  position: fixed;
+  top: 44px;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px;
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #334155;
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  color: #f8fafc;
+  flex-wrap: wrap;
+}
+
+.gs-queue-bar[hidden] { display: none; }
+.gs-queue-label { font-weight: 600; color: #fbbf24; }
+
+.gs-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.gs-queue-prog {
+  display: inline-block;
+  width: 60px;
+  height: 8px;
+  background: #0f172a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gs-queue-fill {
+  display: block;
+  height: 100%;
+  background: #fbbf24;
+  transition: width 1s linear;
+}
+
+/* HUD morale color pulse when low */
+.gs-hud-item[data-hud="morale"] {
+  transition: color 300ms;
+}
+
+/* Panel slide-in animation */
+.gs-panel {
+  animation: gs-slide-in 250ms ease-out;
+}
+
+@keyframes gs-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Action button press feedback */
+.gs-action-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Stat value update flash */
+@keyframes gs-flash {
+  0% { background: rgba(251, 191, 36, 0.3); }
+  100% { background: transparent; }
+}

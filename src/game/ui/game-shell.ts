@@ -43,6 +43,9 @@ export class GameShell {
   private tutorialActive = false;
 
   private activePanel: string | null = null;
+  private buildQueue: Array<{ label: string; ticksRemaining: number; totalTicks: number }> = [];
+  private morale = 100;
+  private queueBar!: HTMLElement;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -52,6 +55,31 @@ export class GameShell {
 
   setActionHandler(handler: ActionHandler): void {
     this.onAction = handler;
+  }
+
+  /** Update the build queue display. */
+  setBuildQueue(queue: Array<{ label: string; ticksRemaining: number; totalTicks: number }>): void {
+    this.buildQueue = queue;
+    this.updateBuildQueueBar();
+  }
+
+  /** Update the morale value. */
+  setMorale(morale: number): void {
+    this.morale = morale;
+  }
+
+  /** Show a transient notification toast. */
+  notify(message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info'): void {
+    const toast = document.createElement('div');
+    toast.className = `gs-toast gs-toast-${type}`;
+    toast.textContent = message;
+    this.container.appendChild(toast);
+    // Animate in then auto-remove.
+    requestAnimationFrame(() => toast.classList.add('gs-toast-show'));
+    setTimeout(() => {
+      toast.classList.remove('gs-toast-show');
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
   }
 
   /** Update HUD numbers in-place (no DOM rebuild). */
@@ -121,6 +149,7 @@ export class GameShell {
     this.hud.innerHTML = `
       <span class="gs-hud-item" data-hud="currency">💰 0</span>
       <span class="gs-hud-item" data-hud="energy">⚡ 0</span>
+      <span class="gs-hud-item" data-hud="morale">😊 100%</span>
       <span class="gs-hud-item" data-hud="era">🏛️ Fossil</span>
       <span class="gs-hud-item" data-hud="weather">☀️ 1.0x</span>
       <span class="gs-hud-item" data-hud="military">🔫 0</span>
@@ -130,6 +159,13 @@ export class GameShell {
       <button class="gs-hud-btn" data-open="settings">⚙️ Settings</button>
     `;
     this.container.appendChild(this.hud);
+
+    // Build queue bar (below HUD).
+    const queueBar = document.createElement('div');
+    queueBar.className = 'gs-queue-bar';
+    queueBar.hidden = true;
+    this.container.appendChild(queueBar);
+    this.queueBar = queueBar;
 
     // Slide-in panel.
     this.panel = document.createElement('div');
@@ -213,6 +249,20 @@ export class GameShell {
     }
   }
 
+  private updateBuildQueueBar(): void {
+    if (!this.queueBar) return;
+    if (this.buildQueue.length === 0) {
+      this.queueBar.hidden = true;
+      return;
+    }
+    this.queueBar.hidden = false;
+    this.queueBar.innerHTML = '<span class="gs-queue-label">🔨 Building:</span>' +
+      this.buildQueue.map((o) => {
+        const pct = Math.round(((o.totalTicks - o.ticksRemaining) / o.totalTicks) * 100);
+        return `<span class="gs-queue-item">${o.label} <span class="gs-queue-prog"><span class="gs-queue-fill" style="width:${pct}%"></span></span> ${o.ticksRemaining}s</span>`;
+      }).join('');
+  }
+
   // ─── HUD Updates (text only, no rebuild) ──────────────────────────────
 
   private updateHUD(state: GameState): void {
@@ -227,6 +277,8 @@ export class GameShell {
     const wIcon = state.weather.current === 'sunny' ? '☀️' : state.weather.current === 'partly_cloudy' ? '⛅' : state.weather.current === 'overcast' ? '☁️' : '🌧️';
     set('weather', `${wIcon} ${wMod}x`);
     set('military', `🔫 ${formatNumber(state.weapons.militaryPower)}`);
+    const moraleIcon = this.morale > 70 ? '😊' : this.morale > 40 ? '😐' : '😟';
+    set('morale', `${moraleIcon} ${this.morale.toFixed(0)}%`);
   }
 
   // ─── Panel Rendering ──────────────────────────────────────────────────

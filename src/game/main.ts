@@ -54,6 +54,50 @@ const gameSystems: GameSystem[] = [
 
 let gameLoop: GameLoop | null = null;
 
+// ─── Build Queue & Morale (harder difficulty) ───────────────────────────────
+
+interface BuildOrder {
+  action: { type: string; payload: Record<string, unknown> };
+  label: string;
+  ticksRemaining: number;
+  totalTicks: number;
+}
+
+const buildQueue: BuildOrder[] = [];
+
+// Build times (in seconds) per action type — makes the game slower/harder.
+const BUILD_TIMES: Record<string, number> = {
+  build_power_plant: 8,
+  build_solar_panel: 5,
+  build_mine: 6,
+  build_distribution_network: 12,
+  build_weapons_factory: 10,
+  build_lab: 10,
+  build_orbital_platform: 20,
+  upgrade_storage: 6,
+};
+
+// Morale: 0-100. Affects production efficiency. Persisted in localStorage.
+let morale = 100;
+try {
+  const savedMorale = localStorage.getItem('shg_morale');
+  if (savedMorale) morale = parseFloat(savedMorale);
+} catch { /* ignore */ }
+
+function getBuildLabel(type: string): string {
+  const labels: Record<string, string> = {
+    build_power_plant: 'Power Plant',
+    build_solar_panel: 'Solar Panel',
+    build_mine: 'Mine',
+    build_distribution_network: 'Distribution Network',
+    build_weapons_factory: 'Weapons Factory',
+    build_lab: 'Research Lab',
+    build_orbital_platform: 'Orbital Platform',
+    upgrade_storage: 'Storage Upgrade',
+  };
+  return labels[type] ?? type;
+}
+
 // Wire action handler.
 shell.setActionHandler((action) => {
   if (!gameLoop) return;
@@ -64,37 +108,36 @@ shell.setActionHandler((action) => {
     shell.render(gameLoop.getState());
     return;
   }
-  if (action.type === 'upgrade_storage') {
+
+  // Buildable actions go through the build queue (build time).
+  if (action.type in BUILD_TIMES) {
     const state = gameLoop.getState();
-    const cost = (action.payload.cost as number) ?? 300;
-    if (state.resources.currency < cost) return;
-    const newState = applyUpdate(state, {
-      resources: { currency: state.resources.currency - cost },
-      mutations: [{ path: 'energy.maxStorage', value: state.energy.maxStorage + 200 }],
+    const cost = (action.payload.cost as number) ?? 0;
+    // Validate currency upfront (deduct on queue, build completes later).
+    if (cost > 0 && state.resources.currency < cost) {
+      shell.notify('Not enough currency!', 'error');
+      return;
+    }
+    // Limit queue size for difficulty (can't spam-build).
+    if (buildQueue.length >= 3) {
+      shell.notify('Build queue full (max 3). Wait for completion.', 'warning');
+      return;
+    }
+    // Deduct cost immediately.
+    if (cost > 0) {
+      gameLoop.setState(applyUpdate(state, {
+        resources: { currency: state.resources.currency - cost },
+      }));
+    }
+    const buildTime = BUILD_TIMES[action.type];
+    buildQueue.push({
+      action,
+      label: getBuildLabel(action.type),
+      ticksRemaining: buildTime,
+      totalTicks: buildTime,
     });
-    gameLoop.setState(newState);
-    shell.render(gameLoop.getState());
-    return;
-  }
-  if (action.type === 'build_lab') {
-    const state = gameLoop.getState();
-    const cost = (action.payload.cost as number) ?? 250;
-    if (state.resources.currency < cost) return;
-    // Labs are tracked as a knowledge production bonus via a stat mutation.
-    // We store lab count in statistics.totalResearchCompleted as a proxy (hacky but works).
-    // Better: add a knowledgeRate field. For now, directly add knowledge per tick via resource rate.
-    const newState = applyUpdate(state, {
-      resources: {
-        currency: state.resources.currency - cost,
-        knowledgePoints: state.resources.knowledgePoints + 0, // no immediate bonus
-      },
-      mutations: [
-        // Increase the knowledge point rate by storing it in a custom stat.
-        // We'll bump knowledgePoints directly in the render callback.
-        { path: 'statistics.totalResearchCompleted', value: state.statistics.totalResearchCompleted + 1 },
-      ],
-    });
-    gameLoop.setState(newState);
+    shell.notify(`${getBuildLabel(action.type)} construction started (${buildTime}s)`, 'info');
+    shell.setBuildQueue(buildQueue);
     shell.render(gameLoop.getState());
     return;
   }
@@ -116,6 +159,40 @@ shell.setActionHandler((action) => {
     }
   }
 });
+
+/** Complete a build order by running the action (cost already deducted). */
+function completeBuild(loop: GameLoop, order: BuildOrder): void {
+  const state = loop.getState();
+  const payloadNoCost = { ...order.action.payload, cost: 0 };
+
+  // Lab and storage are special.
+  if (order.action.type === 'build_lab') {
+    loop.setState(applyUpdate(state, {
+      mutations: [{ path: 'statistics.totalResearchCompleted', value: state.statistics.totalResearchCompleted + 1 }],
+    }));
+    return;
+  }
+  if (order.action.type === 'upgrade_storage') {
+    loop.setState(applyUpdate(state, {
+      mutations: [{ path: 'energy.maxStorage', value: state.energy.maxStorage + 200 }],
+    }));
+    return;
+  }
+
+  for (const system of gameSystems) {
+    if (system.canPerform(state, { type: order.action.type, payload: payloadNoCost })) {
+      const update = system.perform(state, { type: order.action.type, payload: payloadNoCost });
+      if (update) {
+        loop.setState(applyUpdate(state, update));
+        if (update.events) {
+          eventController.enqueue(update.events);
+          eventController.dispatch();
+        }
+      }
+      break;
+    }
+  }
+}
 
 // ─── Start Game ─────────────────────────────────────────────────────────────
 
@@ -139,10 +216,24 @@ function startGame(country: CountryId): void {
     if (now - lastRender < 1000) return;
     lastRender = now;
 
-    // Labs generate knowledge: 2 per tick per lab (labs stored as totalResearchCompleted).
+    // ── Process build queue (1 second per render tick) ──
+    if (buildQueue.length > 0) {
+      const order = buildQueue[0];
+      order.ticksRemaining -= 1;
+      if (order.ticksRemaining <= 0) {
+        completeBuild(loop, order);
+        buildQueue.shift();
+        shell.notify(`${order.label} construction complete!`, 'success');
+        currentState = loop.getState();
+      }
+      shell.setBuildQueue(buildQueue);
+    }
+
+    // ── Labs generate knowledge (reduced by low morale) ──
     const labCount = currentState.statistics.totalResearchCompleted;
     if (labCount > 0) {
-      const knowledgeGain = labCount * 2;
+      const moraleMultiplier = 0.4 + (morale / 100) * 0.6; // 40%-100%
+      const knowledgeGain = labCount * 2 * moraleMultiplier;
       const updated = applyUpdate(currentState, {
         resources: { knowledgePoints: currentState.resources.knowledgePoints + knowledgeGain },
       });
@@ -150,10 +241,10 @@ function startGame(country: CountryId): void {
       currentState = updated;
     }
 
-    // Weapons factories consume energy (5 per factory per tick).
+    // ── Weapons factories consume energy (HARDER: 12/tick instead of 5) ──
     const weaponFactoryCount = currentState.weapons.factories.length;
     if (weaponFactoryCount > 0) {
-      const energyDrain = weaponFactoryCount * 5;
+      const energyDrain = weaponFactoryCount * 12;
       const newStored = Math.max(0, currentState.energy.stored - energyDrain);
       const updated = applyUpdate(currentState, {
         mutations: [{ path: 'energy.stored', value: newStored }],
@@ -162,6 +253,20 @@ function startGame(country: CountryId): void {
       currentState = updated;
     }
 
+    // ── Morale dynamics (HARDER difficulty) ──
+    updateMorale(currentState);
+
+    // ── Income penalty when morale is low ──
+    if (morale < 50 && currentState.resources.currency > 0) {
+      const penalty = currentState.resources.currency * 0.002 * (1 - morale / 100);
+      const updated = applyUpdate(currentState, {
+        resources: { currency: Math.max(0, currentState.resources.currency - penalty) },
+      });
+      loop.setState(updated);
+      currentState = updated;
+    }
+
+    shell.setMorale(morale);
     shell.render(currentState);
   });
 
@@ -171,16 +276,54 @@ function startGame(country: CountryId): void {
   shell.startTutorial();
 }
 
+// ─── Morale Dynamics ─────────────────────────────────────────────────────────
+
+/**
+ * Morale rises with public approval and energy surplus, falls with nuclear
+ * plants, low approval, UN hostility, and zero/low currency. Persisted.
+ */
+function updateMorale(state: GameState): void {
+  let delta = 0;
+
+  // Public approval pulls morale toward it.
+  delta += (state.opposition.publicApproval - 50) * 0.02;
+
+  // Nuclear plants hurt morale.
+  const nuclearPlants = state.energy.powerPlants.filter((p) => p.type === 'nuclear').length;
+  delta -= nuclearPlants * 0.15;
+
+  // UN hostility hurts morale.
+  delta -= state.opposition.unHostility * 0.01;
+
+  // Energy shortage (stored near zero) hurts morale.
+  if (state.energy.stored < state.energy.maxStorage * 0.1) {
+    delta -= 0.5;
+  }
+
+  // Broke = morale tanks.
+  if (state.resources.currency < 100) {
+    delta -= 1.0;
+  }
+
+  // Net positive income helps slightly.
+  if (state.resources.incomeRate > state.resources.expenseRate) {
+    delta += 0.1;
+  }
+
+  morale = Math.max(0, Math.min(100, morale + delta));
+  try { localStorage.setItem('shg_morale', morale.toFixed(1)); } catch { /* ignore */ }
+}
+
 // ─── Era Progression ────────────────────────────────────────────────────────
 
-// Era advancement costs (currency, knowledge, steel, energy stored).
+// Era advancement costs — HARDER (roughly 2x previous values + morale requirement).
 const ERA_COSTS: Record<string, { currency: number; knowledge: number; steel: number; energy: number }> = {
-  nuclear: { currency: 5000, knowledge: 200, steel: 50, energy: 2000 },
-  solar: { currency: 15000, knowledge: 500, steel: 150, energy: 5000 },
-  orbital: { currency: 50000, knowledge: 1500, steel: 500, energy: 15000 },
-  mars_colonization: { currency: 150000, knowledge: 5000, steel: 2000, energy: 50000 },
-  space_mining: { currency: 500000, knowledge: 15000, steel: 8000, energy: 150000 },
-  dyson_ring: { currency: 2000000, knowledge: 50000, steel: 30000, energy: 500000 },
+  nuclear: { currency: 12000, knowledge: 400, steel: 120, energy: 4000 },
+  solar: { currency: 35000, knowledge: 1200, steel: 350, energy: 12000 },
+  orbital: { currency: 120000, knowledge: 3500, steel: 1200, energy: 35000 },
+  mars_colonization: { currency: 350000, knowledge: 12000, steel: 5000, energy: 120000 },
+  space_mining: { currency: 1200000, knowledge: 35000, steel: 18000, energy: 350000 },
+  dyson_ring: { currency: 5000000, knowledge: 120000, steel: 70000, energy: 1200000 },
 };
 
 export function getNextEraCost(state: GameState) {
@@ -199,7 +342,8 @@ export function canAdvanceEra(state: GameState): boolean {
     state.resources.currency >= cost.currency &&
     state.resources.knowledgePoints >= cost.knowledge &&
     (state.materials.stockpiles.steel ?? 0) >= cost.steel &&
-    state.energy.stored >= cost.energy
+    state.energy.stored >= cost.energy &&
+    morale >= 40 // HARDER: need decent morale to advance
   );
 }
 

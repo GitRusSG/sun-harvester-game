@@ -67,6 +67,9 @@ export class SolarScene {
   private readonly cameraTarget = new THREE.Vector3();
   private readonly dysonRing: THREE.Group;
   private dysonSegmentMeshes: THREE.Mesh[] = [];
+  private elapsedTime = 0;
+  private sunGlow: THREE.Mesh | null = null;
+  private starfield: THREE.Points | null = null;
 
   private transition: CameraTransition | null = null;
   private focused: CelestialBodyId = 'earth';
@@ -105,7 +108,8 @@ export class SolarScene {
     );
 
     this.scene.background = new THREE.Color(0x05070f);
-    this.scene.add(this.buildStarfield());
+    this.starfield = this.buildStarfield();
+    this.scene.add(this.starfield);
     this.scene.add(this.buildLights());
 
     // Sun glow at the origin.
@@ -337,6 +341,7 @@ export class SolarScene {
       }),
     );
     group.add(glow);
+    this.sunGlow = glow;
 
     // Register the sun as a (marker-less) navigable body for framing maths.
     this.bodies.set('sun', {
@@ -719,11 +724,29 @@ export class SolarScene {
   }
 
   private update(dt: number): void {
-    // Gentle idle spin on each body for life.
+    this.elapsedTime += dt;
+
+    // Gentle idle spin on each body for life. Different speeds per body.
+    let bodyIndex = 0;
     for (const visual of this.bodies.values()) {
-      visual.mesh.rotation.y += dt * 0.15;
+      const speed = visual.body.id === 'sun' ? 0.05 : 0.1 + bodyIndex * 0.02;
+      visual.mesh.rotation.y += dt * speed;
+      bodyIndex++;
     }
-    this.dysonRing.rotation.z += dt * 0.05;
+
+    // Dyson ring counter-rotation.
+    this.dysonRing.rotation.z += dt * 0.08;
+
+    // Sun pulse: scale the glow shell subtly.
+    if (this.sunGlow) {
+      const pulse = 1 + Math.sin(this.elapsedTime * 1.5) * 0.04;
+      this.sunGlow.scale.setScalar(pulse);
+    }
+
+    // Starfield slow drift for parallax.
+    if (this.starfield) {
+      this.starfield.rotation.y += dt * 0.005;
+    }
 
     if (this.transition) {
       this.advanceTransition(dt);
@@ -732,9 +755,9 @@ export class SolarScene {
       const target = this.bodyWorldPosition(this.focused);
       const body = getCelestialBody(this.focused);
       const distance = this.framingDistance(body);
-      this.cameraTarget.lerp(target, 0.2);
+      this.cameraTarget.lerp(target, 0.12);
       const desired = this.orbitCameraPosition(target, distance);
-      this.camera.position.lerp(desired, 0.15);
+      this.camera.position.lerp(desired, 0.08);
       this.camera.lookAt(this.cameraTarget);
     }
   }
