@@ -432,7 +432,7 @@ export class GameShell {
       <h3 class="gs-section-title">Research & Military</h3>
       <div class="gs-action-list">
         ${btn(`🔬 Research Lab ($${labCost}) [+2 knowledge/tick]`, { type: 'build_lab', payload: { cost: labCost } }, labCost)}
-        ${btn('🔫 Weapons Factory (uses 5 energy/tick)', { type: 'build_weapons_factory', payload: { producing: 'conventional' } }, 0)}
+        ${btn(`🔫 Weapons Factory ($${weaponsCost}, +5 power, uses 12 energy/tick)`, { type: 'build_weapons_factory', payload: { producing: 'conventional', cost: weaponsCost } }, weaponsCost)}
       </div>
 
       <h3 class="gs-section-title">Space (requires orbital era)</h3>
@@ -617,7 +617,7 @@ export class GameShell {
       </div>
       <p class="gs-muted">Soldiers assigned: ${arsenal.conventional * 1 + arsenal.missile * 5 + arsenal.cyber * 3 + arsenal.energy * 10 + arsenal.orbital * 20} / ${soldiers} available</p>
       <div class="gs-action-list">
-        ${btn('🔫 Produce Rifles (1 steel)', { type: 'build_weapons_factory', payload: { producing: 'conventional' } })}
+        ${btn('🔫 Produce Rifles (1 steel → +1 power)', { type: 'produce_rifles', payload: {} }, (state.materials.stockpiles.steel ?? 0) < 1)}
         ${btn('⚔️ Attack UN Forces', { type: 'countermeasure', payload: { type: 'military_defense' } }, state.weapons.militaryPower <= state.opposition.unPowerLevel)}
         ${btn('🕊️ Diplomatic Deception', { type: 'countermeasure', payload: { type: 'diplomatic_deception' } })}
         ${btn('📢 Education Campaign ($500)', { type: 'countermeasure', payload: { type: 'education_campaign', investment: 500 } }, state.resources.currency < 500)}

@@ -78,7 +78,7 @@ function boot(): void {
   ];
 
   let gameLoop: GameLoop | null = null;
-  let morale = 100;
+  let morale = 75;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
@@ -166,7 +166,17 @@ function boot(): void {
     for (const system of gameSystems) {
       if (system.canPerform(state, { type: order.action.type, payload })) {
         const update = system.perform(state, { type: order.action.type, payload });
-        if (update) { loop.setState(applyUpdate(state, update)); }
+        if (update) {
+          let newState = applyUpdate(state, update);
+          // A finished weapons factory immediately boosts military power so the
+          // build has a visible effect even before it produces units.
+          if (order.action.type === 'build_weapons_factory') {
+            newState = applyUpdate(newState, {
+              mutations: [{ path: 'weapons.militaryPower', value: newState.weapons.militaryPower + 5 }],
+            });
+          }
+          loop.setState(newState);
+        }
         break;
       }
     }
@@ -199,8 +209,15 @@ function boot(): void {
 
     // ─── Restart Game (show country selection) ──────────────────────────
     if (action.type === 'restart_game') {
-      try { localStorage.clear(); } catch { /* */ }
+      // Stop the loop FIRST (its final save would otherwise re-write old state),
+      // THEN clear storage so nothing is left behind.
       if (gameLoop) { gameLoop.stop(); gameLoop = null; }
+      try {
+        localStorage.removeItem('shg_save');
+        localStorage.removeItem('shg_morale');
+        localStorage.removeItem('shg_tutorial_done');
+        localStorage.clear();
+      } catch { /* */ }
       morale = 100;
       buildQueue.length = 0;
       shell.setBuildQueue(buildQueue);
@@ -249,6 +266,25 @@ function boot(): void {
         gameLoop.setState(updated);
         shell.notify(`💀 Defeat! Lost ${loss.toFixed(0)} military power. (${attackStrength.toFixed(0)} vs ${defenseStrength.toFixed(0)})`, 'error');
       }
+      shell.render(gameLoop.getState());
+      return;
+    }
+
+    // ─── Produce Rifles (instant, consumes steel) ───────────────────────
+    if (action.type === 'produce_rifles') {
+      const state = gameLoop.getState();
+      const steel = state.materials.stockpiles.steel ?? 0;
+      if (steel < 1) { shell.notify('Need 1 steel to produce rifles!', 'error'); return; }
+      const newConventional = (state.weapons.arsenal.conventional ?? 0) + 1;
+      const updated = applyUpdate(state, {
+        materials: { stockpiles: { ...state.materials.stockpiles, steel: steel - 1 } },
+        mutations: [
+          { path: 'weapons.arsenal.conventional', value: newConventional },
+          { path: 'weapons.militaryPower', value: state.weapons.militaryPower + 1 },
+        ],
+      });
+      gameLoop.setState(updated);
+      shell.notify('🔫 Produced rifles! +1 military power', 'success');
       shell.render(gameLoop.getState());
       return;
     }
@@ -328,20 +364,23 @@ function boot(): void {
         loop.setState(currentState);
       }
 
-      // Morale dynamics.
+      // Morale dynamics — drifts based on living conditions, never fully static.
       let md = 0;
-      md += (currentState.opposition.publicApproval - 50) * 0.02;
-      md -= currentState.energy.powerPlants.filter(p => p.type === 'nuclear').length * 0.15;
-      md -= currentState.opposition.unHostility * 0.01;
-      if (currentState.energy.stored < currentState.energy.maxStorage * 0.1) md -= 0.5;
-      if (currentState.resources.currency < 100) md -= 1.0;
-      if (currentState.resources.incomeRate > currentState.resources.expenseRate) md += 0.1;
+      md += (currentState.opposition.publicApproval - 55) * 0.03;
+      md -= currentState.energy.powerPlants.filter(p => p.type === 'nuclear').length * 0.2;
+      md -= currentState.opposition.unHostility * 0.015;
+      md -= currentState.weapons.factories.length * 0.1; // war economy lowers morale
+      if (currentState.energy.stored < currentState.energy.maxStorage * 0.15) md -= 0.6;
+      if (currentState.resources.currency < 200) md -= 1.2;
+      if (currentState.resources.incomeRate > currentState.resources.expenseRate) md += 0.15;
+      // Constant slight decay so it always trends down without active management.
+      md -= 0.05;
       morale = Math.max(0, Math.min(100, morale + md));
       try { localStorage.setItem('shg_morale', morale.toFixed(1)); } catch { /* */ }
 
       // Low morale penalty.
       if (morale < 50 && currentState.resources.currency > 0) {
-        const pen = currentState.resources.currency * 0.002 * (1 - morale / 100);
+        const pen = currentState.resources.currency * 0.003 * (1 - morale / 100);
         currentState = applyUpdate(currentState, { resources: { currency: Math.max(0, currentState.resources.currency - pen) } });
         loop.setState(currentState);
       }
