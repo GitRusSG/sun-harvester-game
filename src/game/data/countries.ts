@@ -75,16 +75,22 @@ export const COUNTRY_PROFILES: Record<CountryId, CountryProfile> = {
       }
     ],
     startingResources: {
-      currency: 5000,
+      currency: 9_000_000_000_000,
       materials: {
-        uranium: 40,
-        coal: 100,
-        fuel: 50,
-        iron_ore: 35,
+        uranium: 9_000_000_000,
+        coal: 9_000_000_000,
+        fuel: 9_000_000_000,
+        iron_ore: 9_000_000_000,
+        steel: 9_000_000_000,
+        silicon: 9_000_000_000,
+        copper: 9_000_000_000,
+        electronics: 9_000_000_000,
+        rare_earth: 9_000_000_000,
+        advanced_circuits: 9_000_000_000,
       },
-      energyCapacity: 600,
+      energyCapacity: 9_000_000_000,
     },
-    startingMilitary: 14,
+    startingMilitary: 9_000_000_000,
   },
 
   india: {
@@ -100,7 +106,7 @@ export const COUNTRY_PROFILES: Record<CountryId, CountryProfile> = {
       },
     ],
     startingResources: {
-      currency: 500,
+      currency: 0,
       materials: {
         silicon: 100,
         iron_ore: 50,
