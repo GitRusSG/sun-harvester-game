@@ -50,6 +50,18 @@ function showCrashScreen(message: string): void {
 window.addEventListener('error', (e) => showCrashScreen(e.message ?? 'Unknown error'));
 window.addEventListener('unhandledrejection', (e) => showCrashScreen(String(e.reason ?? 'Unknown error')));
 
+// ─── Force Reset (bump this number to wipe all players' saves on next load) ─
+const RESET_VERSION = 1;
+const RESET_KEY = 'shg_reset_version';
+try {
+  const prev = parseInt(localStorage.getItem(RESET_KEY) ?? '0');
+  if (prev < RESET_VERSION) {
+    localStorage.clear();
+    localStorage.setItem(RESET_KEY, String(RESET_VERSION));
+    console.info(`[SunHarvester] Save reset (v${RESET_VERSION}). Fresh start.`);
+  }
+} catch { /* storage unavailable — continue fresh */ }
+
 // ─── Main Game Init (wrapped in try/catch) ──────────────────────────────────
 
 try {
@@ -84,10 +96,18 @@ function boot(): void {
   let maxQueueSize = 6;
   let buildSpeedMultiplier = 1.0;
   let knowledgeSpeedMultiplier = 1.0;
+  let researchSpeedMultiplier = 1.0;
+  let protestSuppressionLevel = 0;
+  let autoMoraleEnabled = false;
+  let autoMoraleThreshold = 50;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
   try { const q = localStorage.getItem('shg_queue_max'); if (q) maxQueueSize = parseInt(q); } catch { /* */ }
   try { const s = localStorage.getItem('shg_build_speed'); if (s) buildSpeedMultiplier = parseFloat(s); } catch { /* */ }
   try { const k = localStorage.getItem('shg_knowledge_speed'); if (k) knowledgeSpeedMultiplier = parseFloat(k); } catch { /* */ }
+  try { const r = localStorage.getItem('shg_research_speed'); if (r) researchSpeedMultiplier = parseFloat(r); } catch { /* */ }
+  try { const p = localStorage.getItem('shg_protest_suppress'); if (p) protestSuppressionLevel = parseInt(p); } catch { /* */ }
+  try { const a = localStorage.getItem('shg_auto_morale'); if (a) { autoMoraleEnabled = a === '1'; } } catch { /* */ }
+  try { const t = localStorage.getItem('shg_auto_morale_threshold'); if (t) autoMoraleThreshold = parseInt(t); } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
 
@@ -305,6 +325,10 @@ function boot(): void {
       maxQueueSize = 6;
       buildSpeedMultiplier = 1.0;
       knowledgeSpeedMultiplier = 1.0;
+      researchSpeedMultiplier = 1.0;
+      protestSuppressionLevel = 0;
+      autoMoraleEnabled = false;
+      autoMoraleThreshold = 50;
       buildQueue.length = 0;
       shell.setBuildQueue(buildQueue);
       shell.setMorale(morale);
@@ -460,6 +484,21 @@ function boot(): void {
           try { localStorage.setItem('shg_knowledge_speed', knowledgeSpeedMultiplier.toFixed(2)); } catch { /* */ }
           shell.notify(`🧠 Knowledge speed ×${knowledgeSpeedMultiplier.toFixed(1)}!`, 'success');
           break;
+        case 'research_speed':
+          researchSpeedMultiplier += 0.5;
+          try { localStorage.setItem('shg_research_speed', researchSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          shell.notify(`🔬 Research speed ×${researchSpeedMultiplier.toFixed(1)}!`, 'success');
+          break;
+        case 'protest_suppress':
+          protestSuppressionLevel += 1;
+          try { localStorage.setItem('shg_protest_suppress', String(protestSuppressionLevel)); } catch { /* */ }
+          shell.notify(`🛡️ Protest suppression level ${protestSuppressionLevel}! UN hostility reduced.`, 'success');
+          break;
+        case 'auto_morale_toggle':
+          autoMoraleEnabled = !autoMoraleEnabled;
+          try { localStorage.setItem('shg_auto_morale', autoMoraleEnabled ? '1' : '0'); } catch { /* */ }
+          shell.notify(autoMoraleEnabled ? '🤖 Auto-morale ON (threshold: ' + autoMoraleThreshold + ')' : '🤖 Auto-morale OFF', 'info');
+          break;
       }
       gameLoop.setState(upd);
       shell.render(gameLoop.getState());
@@ -582,6 +621,35 @@ function boot(): void {
       if (wf > 0) {
         currentState = applyUpdate(currentState, { mutations: [{ path: 'energy.stored', value: Math.max(0, currentState.energy.stored - wf * 12) }] });
         loop.setState(currentState);
+      }
+
+      // Research speed boost — if multiplier > 1, decrement extra ticks from active research.
+      if (researchSpeedMultiplier > 1 && currentState.research.currentResearch) {
+        const extraTicks = researchSpeedMultiplier - 1; // e.g. 1.5 → 0.5 extra tick per second
+        const cr = currentState.research.currentResearch;
+        const newRemaining = Math.max(0, cr.remainingTicks - extraTicks);
+        currentState = applyUpdate(currentState, {
+          mutations: [{ path: 'research.currentResearch', value: { ...cr, remainingTicks: newRemaining } }],
+        });
+        loop.setState(currentState);
+      }
+
+      // Protest suppression — reduces UN hostility over time (each level = -0.5/tick).
+      if (protestSuppressionLevel > 0 && currentState.opposition.unHostility > 0) {
+        const reduction = protestSuppressionLevel * 0.5;
+        const newHostility = Math.max(0, currentState.opposition.unHostility - reduction);
+        currentState = applyUpdate(currentState, {
+          mutations: [{ path: 'opposition.unHostility', value: newHostility }],
+        });
+        loop.setState(currentState);
+      }
+
+      // Auto-morale — spend currency each tick to maintain morale above threshold.
+      if (autoMoraleEnabled && morale < autoMoraleThreshold && currentState.resources.currency > 500) {
+        const cost = 200; // flat cost per tick when below threshold
+        currentState = applyUpdate(currentState, { resources: { currency: currentState.resources.currency - cost } });
+        loop.setState(currentState);
+        morale = Math.min(100, morale + 3);
       }
 
       // Morale dynamics — drifts based on living conditions.

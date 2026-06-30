@@ -659,6 +659,13 @@ export class GameShell {
         ${btn('📦 Queue Expansion (+2 slots) — $5000', { type: 'upgrade_buy', payload: { kind: 'queue_size', cost: 5000 } }, 5000, 'Adds 2 more build queue slots.')}
         ${btn('⚡ Construction Speed (+25%) — $8000', { type: 'upgrade_buy', payload: { kind: 'build_speed', cost: 8000 } }, 8000, 'All future builds complete 25% faster (stacks).')}
         ${btn('🧠 Knowledge Speed (+50%) — $6000', { type: 'upgrade_buy', payload: { kind: 'knowledge_speed', cost: 6000 } }, 6000, 'Labs produce knowledge 50% faster (stacks). Speeds up era advancement.')}
+        ${btn('🔬 Research Speed (+50%) — $10000', { type: 'upgrade_buy', payload: { kind: 'research_speed', cost: 10000 } }, 10000, 'Active research completes 50% faster (stacks). Unlocks tech tree nodes sooner.')}
+      </div>
+
+      <h3 class="gs-section-title">🛡️ Stability</h3>
+      <div class="gs-action-list">
+        ${btn('🛡️ Protest Suppression — $7000', { type: 'upgrade_buy', payload: { kind: 'protest_suppress', cost: 7000 } }, 7000, 'Reduces UN hostility over time. Each level = -0.5 hostility/sec (stacks).')}
+        ${btn('🤖 Auto-Morale Toggle — $3000', { type: 'upgrade_buy', payload: { kind: 'auto_morale_toggle', cost: 3000 } }, 3000, 'Toggle automatic morale maintenance. Spends $200/sec when morale drops below 50.')}
       </div>
 
       <h3 class="gs-section-title">🎉 Morale</h3>
