@@ -551,10 +551,54 @@ export class GameShell {
         ${btn('🛰️ Orbital Platform ($2000 + 10 fuel + 20 steel)', { type: 'build_orbital_platform', payload: { type: 'solar_collector', output: 15, cost: 2000 } }, 2000, 'Space solar collector — generates energy with no weather penalty. Needs 10 fuel + 20 steel too.')}
       </div>
 
+      ${this.renderEraUnlockedBuilds(state, btn)}
+
       <h3 class="gs-section-title">Placement Grid</h3>
       <p class="gs-muted">Your base has ${state.energy.solarPanels.length} solar panels, ${state.energy.powerPlants.length} plants, ${state.infrastructure.mines.length} mines.</p>
       ${this.renderPlacementGrid(state)}
     `;
+  }
+
+  /**
+   * Era-gated building options. Each era unlocks new structures, so advancing
+   * meaningfully expands what you can build.
+   */
+  private renderEraUnlockedBuilds(
+    state: GameState,
+    btn: (label: string, action: ActionPayload, cost: number, info?: string) => string,
+  ): string {
+    const eraIdx = ERA_ORDER.indexOf(state.currentEra);
+    const has = (era: string) => eraIdx >= ERA_ORDER.indexOf(era as (typeof ERA_ORDER)[number]);
+    let html = '';
+
+    if (has('nuclear')) {
+      html += `<h3 class="gs-section-title">☢️ Nuclear Era</h3><div class="gs-action-list">
+        ${btn('☢️ Nuclear Power Plant ($1200)', { type: 'build_power_plant', payload: { type: 'nuclear', cost: 1200 } }, 1200, 'Massive energy from uranium. Lowers morale via anti-nuclear protests.')}
+        ${btn('🚀 Missile Battery ($800, +15 power)', { type: 'build_weapons_factory', payload: { producing: 'missile', cost: 800 } }, 800, 'High-power missile systems. Strong UN deterrent.')}
+      </div>`;
+    }
+    if (has('solar')) {
+      html += `<h3 class="gs-section-title">☀️ Solar Era</h3><div class="gs-action-list">
+        ${btn('🔆 Solar Farm ($900)', { type: 'build_solar_panel', payload: { locationId: 'sahara', cost: 900, efficiency: 3 } }, 900, 'High-capacity solar array — much higher output than a basic panel.')}
+        ${btn('🔋 Mega Battery ($1500)', { type: 'upgrade_storage', payload: { cost: 1500, amount: 1000 } }, 1500, 'Adds 1000 energy storage capacity.')}
+      </div>`;
+    }
+    if (has('orbital')) {
+      html += `<h3 class="gs-section-title">🛰️ Orbital Era</h3><div class="gs-action-list">
+        ${btn('💻 Cyber Warfare Lab ($2500, +10 power)', { type: 'build_weapons_factory', payload: { producing: 'cyber', cost: 2500 } }, 2500, 'Cyber weapons disrupt enemy defenses.')}
+      </div>`;
+    }
+    if (has('mars_colonization')) {
+      html += `<h3 class="gs-section-title">🔴 Mars Era</h3><div class="gs-action-list">
+        ${btn('⚡ Energy Weapon Array ($6000, +25 power)', { type: 'build_weapons_factory', payload: { producing: 'energy', cost: 6000 } }, 6000, 'Directed-energy weapons — very high military power.')}
+      </div>`;
+    }
+    if (has('space_mining')) {
+      html += `<h3 class="gs-section-title">☄️ Space Mining Era</h3><div class="gs-action-list">
+        ${btn('🛰️ Orbital Weapon ($12000, +40 power)', { type: 'build_weapons_factory', payload: { producing: 'orbital', cost: 12000 } }, 12000, 'Orbital strike platform — the strongest weapon system.')}
+      </div>`;
+    }
+    return html;
   }
 
   /**

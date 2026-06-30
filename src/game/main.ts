@@ -164,22 +164,40 @@ function boot(): void {
       return;
     }
     if (order.action.type === 'upgrade_storage') {
-      loop.setState(applyUpdate(state, { mutations: [{ path: 'energy.maxStorage', value: state.energy.maxStorage + 200 }] }));
+      const amount = (order.action.payload.amount as number) ?? 200;
+      loop.setState(applyUpdate(state, { mutations: [{ path: 'energy.maxStorage', value: state.energy.maxStorage + amount }] }));
       return;
     }
+    // Era-gated weapon tiers grant a flat power bonus directly (era is the gate,
+    // not the weapons tech tree), since the UI only offers them in the right era.
+    const WEAPON_POWER: Record<string, number> = {
+      conventional: 5, missile: 15, cyber: 10, energy: 25, orbital: 40,
+    };
+    if (order.action.type === 'build_weapons_factory') {
+      const producing = (order.action.payload.producing as string) ?? 'conventional';
+      const bonus = WEAPON_POWER[producing] ?? 5;
+      // Try the weapons system first (creates a real factory if unlocked)...
+      let newState = state;
+      for (const system of gameSystems) {
+        if (system.canPerform(state, { type: order.action.type, payload })) {
+          const update = system.perform(state, { type: order.action.type, payload });
+          if (update) newState = applyUpdate(state, update);
+          break;
+        }
+      }
+      // ...then always grant the power bonus so the build has an effect.
+      newState = applyUpdate(newState, {
+        mutations: [{ path: 'weapons.militaryPower', value: newState.weapons.militaryPower + bonus }],
+      });
+      loop.setState(newState);
+      return;
+    }
+
     for (const system of gameSystems) {
       if (system.canPerform(state, { type: order.action.type, payload })) {
         const update = system.perform(state, { type: order.action.type, payload });
         if (update) {
-          let newState = applyUpdate(state, update);
-          // A finished weapons factory immediately boosts military power so the
-          // build has a visible effect even before it produces units.
-          if (order.action.type === 'build_weapons_factory') {
-            newState = applyUpdate(newState, {
-              mutations: [{ path: 'weapons.militaryPower', value: newState.weapons.militaryPower + 5 }],
-            });
-          }
-          loop.setState(newState);
+          loop.setState(applyUpdate(state, update));
         }
         break;
       }

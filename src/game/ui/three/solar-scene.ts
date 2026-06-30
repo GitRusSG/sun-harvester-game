@@ -452,18 +452,32 @@ export class SolarScene {
       return material;
     }
     if (body.id === 'moon') {
-      return new THREE.MeshStandardMaterial({
+      const material = new THREE.MeshStandardMaterial({
         map: this.generateMoonTexture(),
         roughness: 0.95,
         metalness: 0.0,
       });
+      new THREE.TextureLoader().load(
+        `${import.meta.env.BASE_URL}moon-texture.jpg`,
+        (tex) => { tex.colorSpace = THREE.SRGBColorSpace; material.map = tex; material.needsUpdate = true; },
+        undefined,
+        () => { /* keep procedural fallback */ },
+      );
+      return material;
     }
     if (body.id === 'mars') {
-      return new THREE.MeshStandardMaterial({
+      const material = new THREE.MeshStandardMaterial({
         map: this.generateMarsTexture(),
         roughness: 0.92,
         metalness: 0.0,
       });
+      new THREE.TextureLoader().load(
+        `${import.meta.env.BASE_URL}mars-texture.jpg`,
+        (tex) => { tex.colorSpace = THREE.SRGBColorSpace; material.map = tex; material.needsUpdate = true; },
+        undefined,
+        () => { /* keep procedural fallback */ },
+      );
+      return material;
     }
     return new THREE.MeshStandardMaterial({
       color: body.color,
