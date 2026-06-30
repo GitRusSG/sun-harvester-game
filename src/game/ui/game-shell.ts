@@ -103,7 +103,11 @@ export class GameShell {
 
   showCountrySelection(onSelect: (country: CountryId) => void): void {
     this.panel.hidden = true;
+    this.activePanel = null;
     this.hud.hidden = true;
+    this.queueBar.hidden = true;
+    // Remove any existing country overlay (prevents duplicates on double-restart).
+    this.container.querySelector('.gs-country-overlay')?.remove();
     const overlay = document.createElement('div');
     overlay.className = 'gs-country-overlay';
     overlay.innerHTML = `<h1 class="gs-country-title">Choose Your Nation</h1>

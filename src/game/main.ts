@@ -201,6 +201,10 @@ function boot(): void {
     if (action.type === 'restart_game') {
       try { localStorage.clear(); } catch { /* */ }
       if (gameLoop) { gameLoop.stop(); gameLoop = null; }
+      morale = 100;
+      buildQueue.length = 0;
+      shell.setBuildQueue(buildQueue);
+      shell.setMorale(morale);
       shell.showCountrySelection((country) => startGame(country));
       return;
     }
