@@ -608,6 +608,12 @@ export class GameShell {
         ${btn(`📚 Knowledge Grant (+500 KP) — $${formatNumber(knowledgeCost)}`, { type: 'upgrade_buy', payload: { kind: 'knowledge', cost: knowledgeCost } }, knowledgeCost, 'Instantly converts currency into 500 knowledge points.')}
       </div>
 
+      <h3 class="gs-section-title">🏗️ Build Queue</h3>
+      <div class="gs-action-list">
+        ${btn('📦 Queue Expansion (+2 slots) — $5000', { type: 'upgrade_buy', payload: { kind: 'queue_size', cost: 5000 } }, 5000, 'Adds 2 more build queue slots.')}
+        ${btn('⚡ Construction Speed (+25%) — $8000', { type: 'upgrade_buy', payload: { kind: 'build_speed', cost: 8000 } }, 8000, 'All future builds complete 25% faster (stacks).')}
+      </div>
+
       <h3 class="gs-section-title">🎉 Morale</h3>
       <div class="gs-action-list">
         ${btn(`🎉 Public Festival (+20 morale) — $${formatNumber(festivalCost)}`, { type: 'morale_festival', payload: { cost: festivalCost } }, festivalCost, 'Throw a national festival for an instant +20 morale boost.')}

@@ -81,7 +81,11 @@ function boot(): void {
   let simulationIntervalId: ReturnType<typeof setInterval> | null = null;
   let morale = 75;
   let quizTickCounter = 0;
+  let maxQueueSize = 6;
+  let buildSpeedMultiplier = 1.0;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
+  try { const q = localStorage.getItem('shg_queue_max'); if (q) maxQueueSize = parseInt(q); } catch { /* */ }
+  try { const s = localStorage.getItem('shg_build_speed'); if (s) buildSpeedMultiplier = parseFloat(s); } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
 
@@ -258,6 +262,8 @@ function boot(): void {
         localStorage.clear();
       } catch { /* */ }
       morale = 100;
+      maxQueueSize = 6;
+      buildSpeedMultiplier = 1.0;
       buildQueue.length = 0;
       shell.setBuildQueue(buildQueue);
       shell.setMorale(morale);
@@ -363,6 +369,16 @@ function boot(): void {
           upd = applyUpdate(upd, { resources: { knowledgePoints: upd.resources.knowledgePoints + 500 } });
           shell.notify('📚 +500 knowledge points', 'success');
           break;
+        case 'queue_size':
+          maxQueueSize += 2;
+          try { localStorage.setItem('shg_queue_max', String(maxQueueSize)); } catch { /* */ }
+          shell.notify(`📦 Queue expanded! Now holds ${maxQueueSize}`, 'success');
+          break;
+        case 'build_speed':
+          buildSpeedMultiplier += 0.25;
+          try { localStorage.setItem('shg_build_speed', buildSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          shell.notify(`⚡ Build speed ×${buildSpeedMultiplier.toFixed(2)}!`, 'success');
+          break;
       }
       gameLoop.setState(upd);
       shell.render(gameLoop.getState());
@@ -391,10 +407,11 @@ function boot(): void {
       const state = gameLoop.getState();
       const cost = (action.payload.cost as number) ?? 0;
       if (cost > 0 && state.resources.currency < cost) { shell.notify('Not enough currency!', 'error'); return; }
-      if (buildQueue.length >= 6) { shell.notify('Queue full (max 6)', 'warning'); return; }
+      if (buildQueue.length >= maxQueueSize) { shell.notify(`Queue full (max ${maxQueueSize})`, 'warning'); return; }
       if (cost > 0) gameLoop.setState(applyUpdate(state, { resources: { currency: state.resources.currency - cost } }));
-      buildQueue.push({ action, label: getBuildLabel(action.type), ticksRemaining: BUILD_TIMES[action.type], totalTicks: BUILD_TIMES[action.type] });
-      shell.notify(`Building ${getBuildLabel(action.type)} (${BUILD_TIMES[action.type]}s)`, 'info');
+      const buildTime = Math.max(1, Math.round(BUILD_TIMES[action.type] / buildSpeedMultiplier));
+      buildQueue.push({ action, label: getBuildLabel(action.type), ticksRemaining: buildTime, totalTicks: buildTime });
+      shell.notify(`Building ${getBuildLabel(action.type)} (${buildTime}s)`, 'info');
       shell.setBuildQueue(buildQueue);
       shell.render(gameLoop.getState());
       return;
