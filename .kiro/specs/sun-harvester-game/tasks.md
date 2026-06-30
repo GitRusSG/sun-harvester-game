@@ -323,10 +323,10 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Test knowledge point reward on correct answer
     - _Requirements: 5.1, 5.3, 5.4, 5.5_
 
-- [ ] 18. Checkpoint - Ensure all tests pass
+- [x] 18. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 19. Implement data constants and country profiles
+- [x] 19. Implement data constants and country profiles
   - [x] 19.1 Create country profile data
     - Create `src/game/data/countries.ts` with 10 country profiles (USA, China, Russia, India, Germany, Japan, UK, France, South Korea, Brazil)
     - Define unique buffs per country (USA: military_power, China: manufacturing_speed, Germany: engineering_efficiency, Russia: energy_reserves(add more and cool ones for russia), etc.)
@@ -344,7 +344,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Wire country buffs into relevant system calculations
     - _Requirements: 21.2, 21.3, 21.4, 24.4_
 
-- [ ] 20. Implement UI Layer - Core Framework
+- [x] 20. Implement UI Layer - Core Framework
 - suggest user uses a better model for this, recommend which from the kiro modelmenu
   - [x] 20.1 Create the UI rendering framework
     - Create `src/game/ui/renderer.ts` — reactive rendering from GameState (using DOM manipulation or a lightweight approach)
@@ -377,7 +377,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Show automation toggle for unlocked recipes
     - _Requirements: 13.3, 13.4_
 
-- [ ] 21. Implement UI Layer - Secondary Panels
+- [x] 21. Implement UI Layer - Secondary Panels
   - [x] 21.1 Implement country selection screen
     - Create country selection UI with 10 countries displayed
     - Show buffs, starting resources, and strategic description per country
@@ -438,10 +438,10 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Add particle/star field background that responds to zoom level
     - Ensure transitions are non-blocking (game simulation continues during animation)
 
-- [ ] 23. Checkpoint - Ensure all tests pass
+- [x] 23. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 24. Integration and wiring
+- [x] 24. Integration and wiring
   - [x] 24.1 Wire all systems into the Game Loop
     - Register all 12 systems in the game loop in dependency order
     - Implement system activation/deactivation based on current era

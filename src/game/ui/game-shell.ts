@@ -118,7 +118,7 @@ export class GameShell {
   }
 
   startTutorial(): void {
-    if (localStorage.getItem('shg_tutorial_done') === '1') return;
+    try { if (localStorage.getItem('shg_tutorial_done') === '1') return; } catch { /* storage blocked */ }
     this.tutorialActive = true;
     this.tutorialStep = 0;
     this.showTutorialStep();
@@ -508,7 +508,7 @@ export class GameShell {
     this.panelTitle.textContent = '⚙️ Settings';
     this.panelContent.innerHTML = `
       <div class="gs-action-list">
-        <button class="gs-action-btn gs-danger" onclick="localStorage.clear(); window.location.reload();">🔄 Restart Game</button>
+        <button class="gs-action-btn gs-danger" onclick="try{localStorage.clear()}catch(e){} window.location.reload();">🔄 Restart Game</button>
         <button class="gs-action-btn" onclick="document.dispatchEvent(new CustomEvent('shg-export'))">💾 Export Save</button>
       </div>
     `;
@@ -692,6 +692,6 @@ export class GameShell {
   private endTutorial(): void {
     this.tutorialActive = false;
     this.tutorialBar.hidden = true;
-    localStorage.setItem('shg_tutorial_done', '1');
+    try { localStorage.setItem('shg_tutorial_done', '1'); } catch { /* storage blocked */ }
   }
 }
