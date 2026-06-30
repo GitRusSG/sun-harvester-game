@@ -78,6 +78,7 @@ function boot(): void {
   ];
 
   let gameLoop: GameLoop | null = null;
+  let simulationIntervalId: ReturnType<typeof setInterval> | null = null;
   let morale = 75;
   let quizTickCounter = 0;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
@@ -221,6 +222,7 @@ function boot(): void {
     if (action.type === 'restart_game') {
       // Stop the loop FIRST (its final save would otherwise re-write old state),
       // THEN clear storage so nothing is left behind.
+      if (simulationIntervalId !== null) { clearInterval(simulationIntervalId); simulationIntervalId = null; }
       if (gameLoop) { gameLoop.stop(); gameLoop = null; }
       try {
         localStorage.removeItem('shg_save');
@@ -339,13 +341,16 @@ function boot(): void {
 
     const loop = new GameLoop(state);
     gameLoop = loop;
+    if (simulationIntervalId !== null) { clearInterval(simulationIntervalId); simulationIntervalId = null; }
     for (const system of gameSystems) loop.registerSystem(system);
 
     let lastRender = 0;
-    loop.setRenderCallback((currentState) => {
-      const now = performance.now();
-      if (now - lastRender < 1000) return;
-      lastRender = now;
+    // ─── Simulation step (runs on a 1s interval, independent of rendering) ──
+    // Keeping this OUT of the render callback ensures the economy, morale,
+    // build queue, and quizzes keep advancing even when no menu is open or
+    // the tab is backgrounded (requestAnimationFrame throttles; setInterval does not).
+    function simulationStep(): void {
+      let currentState = loop.getState();
 
       // Process build queue.
       if (buildQueue.length > 0) {
@@ -359,7 +364,7 @@ function boot(): void {
         shell.setBuildQueue(buildQueue);
       }
 
-      // Labs produce knowledge.
+      // Labs produce knowledge (scaled by morale).
       const labs = currentState.statistics.totalResearchCompleted;
       if (labs > 0) {
         const moraleMultiplier = 0.4 + (morale / 100) * 0.6;
@@ -399,8 +404,7 @@ function boot(): void {
       if (currentState.energy.stored < currentState.energy.maxStorage * 0.15) md -= 0.6;
       if (currentState.resources.currency < 200) md -= 1.2;
       if (currentState.resources.incomeRate > currentState.resources.expenseRate) md += 0.15;
-      // Constant slight decay so it always trends down without active management.
-      md -= 0.05;
+      md -= 0.05; // constant slight decay
       morale = Math.max(0, Math.min(100, morale + md));
       try { localStorage.setItem('shg_morale', morale.toFixed(1)); } catch { /* */ }
 
@@ -411,7 +415,25 @@ function boot(): void {
         loop.setState(currentState);
       }
 
+      // High morale bonus — a happy populace boosts the economy (interdependency).
+      if (morale > 75 && currentState.resources.incomeRate > 0) {
+        const bonus = currentState.resources.incomeRate * 0.1 * ((morale - 75) / 25);
+        currentState = applyUpdate(currentState, { resources: { currency: currentState.resources.currency + bonus } });
+        loop.setState(currentState);
+      }
+
       shell.setMorale(morale);
+      shell.render(loop.getState());
+    }
+
+    // Drive the simulation step every second, independent of the render loop.
+    simulationIntervalId = setInterval(simulationStep, 1000);
+
+    // Render callback is now purely visual (HUD/panel refresh on each frame).
+    loop.setRenderCallback((currentState) => {
+      const now = performance.now();
+      if (now - lastRender < 250) return;
+      lastRender = now;
       shell.render(currentState);
     });
 
