@@ -385,6 +385,21 @@ export class SolarScene {
         }),
       );
       group.add(atmo);
+
+      // Animated cloud layer (rotates slightly faster than Earth).
+      const cloudTexture = this.generateCloudTexture();
+      const clouds = new THREE.Mesh(
+        new THREE.SphereGeometry(body.bodyRadius * 1.015, 48, 48),
+        new THREE.MeshBasicMaterial({
+          map: cloudTexture,
+          transparent: true,
+          opacity: 0.45,
+          side: THREE.FrontSide,
+          depthWrite: false,
+        }),
+      );
+      clouds.name = 'earth_clouds';
+      group.add(clouds);
     }
 
     const markers = new THREE.Group();
@@ -602,6 +617,57 @@ export class SolarScene {
     return texture;
   }
 
+  /**
+   * Procedurally generates a cloud texture (white wisps on transparent background).
+   */
+  private generateCloudTexture(): THREE.CanvasTexture {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size / 2;
+    const ctx = canvas.getContext('2d')!;
+
+    // Transparent background.
+    ctx.clearRect(0, 0, size, size / 2);
+
+    // Draw cloud bands and wisps.
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    for (let i = 0; i < 50; i++) {
+      ctx.globalAlpha = 0.15 + Math.random() * 0.35;
+      ctx.beginPath();
+      ctx.ellipse(
+        Math.random() * size,
+        Math.random() * size / 2,
+        15 + Math.random() * 80,
+        4 + Math.random() * 20,
+        Math.random() * Math.PI * 0.3,
+        0, Math.PI * 2,
+      );
+      ctx.fill();
+    }
+
+    // Larger cloud masses.
+    for (let i = 0; i < 12; i++) {
+      ctx.globalAlpha = 0.2 + Math.random() * 0.25;
+      ctx.beginPath();
+      ctx.ellipse(
+        Math.random() * size,
+        Math.random() * size / 2,
+        40 + Math.random() * 100,
+        15 + Math.random() * 40,
+        Math.random() * Math.PI,
+        0, Math.PI * 2,
+      );
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    return texture;
+  }
+
   // ---------- camera framing ----------
 
   private bodyWorldPosition(id: CelestialBodyId): THREE.Vector3 {
@@ -731,6 +797,13 @@ export class SolarScene {
     for (const visual of this.bodies.values()) {
       const speed = visual.body.id === 'sun' ? 0.05 : 0.1 + bodyIndex * 0.02;
       visual.mesh.rotation.y += dt * speed;
+
+      // Rotate Earth's cloud layer faster than the surface.
+      if (visual.body.id === 'earth') {
+        const clouds = visual.group.getObjectByName('earth_clouds');
+        if (clouds) clouds.rotation.y += dt * 0.18;
+      }
+
       bodyIndex++;
     }
 
