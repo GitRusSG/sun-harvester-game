@@ -514,21 +514,65 @@ function boot(): void {
       const resource = select?.value ?? 'currency';
       const AMOUNT = Math.max(1, parseInt(amountInput?.value ?? '9000000000') || 9_000_000_000);
       let updated = state;
-      if (resource === 'currency') {
-        updated = applyUpdate(state, { resources: { currency: state.resources.currency + AMOUNT } });
-      } else if (resource === 'energy') {
-        updated = applyUpdate(state, { mutations: [{ path: 'energy.stored', value: state.energy.stored + AMOUNT }] });
-      } else if (resource === 'knowledge') {
-        updated = applyUpdate(state, { resources: { knowledgePoints: state.resources.knowledgePoints + AMOUNT } });
-      } else if (resource === 'military') {
-        updated = applyUpdate(state, { mutations: [{ path: 'weapons.militaryPower', value: state.weapons.militaryPower + AMOUNT }] });
-      } else {
-        const newStockpiles = { ...state.materials.stockpiles, [resource]: (state.materials.stockpiles[resource as keyof typeof state.materials.stockpiles] ?? 0) + AMOUNT };
-        updated = applyUpdate(state, { materials: { stockpiles: newStockpiles } });
+      switch (resource) {
+        case 'currency':
+          updated = applyUpdate(state, { resources: { currency: state.resources.currency + AMOUNT } });
+          break;
+        case 'energy':
+          updated = applyUpdate(state, { mutations: [{ path: 'energy.stored', value: state.energy.stored + AMOUNT }] });
+          break;
+        case 'knowledge':
+          updated = applyUpdate(state, { resources: { knowledgePoints: state.resources.knowledgePoints + AMOUNT } });
+          break;
+        case 'military':
+          updated = applyUpdate(state, { mutations: [{ path: 'weapons.militaryPower', value: state.weapons.militaryPower + AMOUNT }] });
+          break;
+        case 'morale':
+          morale = Math.min(100, morale + AMOUNT);
+          try { localStorage.setItem('shg_morale', morale.toFixed(1)); } catch { /* */ }
+          shell.setMorale(morale);
+          break;
+        case 'approval':
+          updated = applyUpdate(state, { mutations: [{ path: 'opposition.publicApproval', value: Math.min(100, state.opposition.publicApproval + AMOUNT) }] });
+          break;
+        case 'advance_era':
+          updated = advanceEra(state);
+          shell.celebrate();
+          break;
+        case 'kill_un':
+          updated = applyUpdate(state, { mutations: [
+            { path: 'opposition.unPowerLevel', value: 0 },
+            { path: 'opposition.unHostility', value: 0 },
+          ] });
+          break;
+        case 'max_storage':
+          updated = applyUpdate(state, { mutations: [{ path: 'energy.maxStorage', value: state.energy.maxStorage + 50000 }] });
+          break;
+        case 'unlock_mars':
+          updated = applyUpdate(state, { mutations: [
+            { path: 'mars.unlocked', value: true },
+            { path: 'mars.baseLevel', value: Math.max(1, state.mars.baseLevel) },
+          ] });
+          break;
+        case 'unlock_space':
+          updated = applyUpdate(state, { mutations: [
+            { path: 'space.unlocked', value: true },
+            { path: 'space.maxTerritories', value: Math.max(3, state.space.maxTerritories) },
+          ] });
+          break;
+        case 'unlock_dyson':
+          updated = applyUpdate(state, { mutations: [{ path: 'dyson.unlocked', value: true }] });
+          break;
+        default: {
+          const newStockpiles = { ...state.materials.stockpiles, [resource]: (state.materials.stockpiles[resource as keyof typeof state.materials.stockpiles] ?? 0) + AMOUNT };
+          updated = applyUpdate(state, { materials: { stockpiles: newStockpiles } });
+          break;
+        }
       }
       gameLoop.setState(updated);
-      shell.notify(`🇷🇺 Granted 9B ${resource.replace('_', ' ')}!`, 'success');
+      shell.notify(`🇷🇺 ${resource.replace('_', ' ')} applied!`, 'success');
       shell.render(gameLoop.getState());
+      shell.refreshActivePanel();
       return;
     }
 

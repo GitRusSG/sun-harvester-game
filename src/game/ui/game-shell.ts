@@ -1047,25 +1047,42 @@ export class GameShell {
       <h3 class="gs-section-title">🇷🇺 Russia Dev Console</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <select id="russia-cheat-resource" class="gs-action-btn" style="padding:6px 10px;min-width:140px;">
-          <option value="currency">Currency</option>
-          <option value="coal">Coal</option>
-          <option value="iron_ore">Iron Ore</option>
-          <option value="steel">Steel</option>
-          <option value="silicon">Silicon</option>
-          <option value="copper">Copper</option>
-          <option value="electronics">Electronics</option>
-          <option value="uranium">Uranium</option>
-          <option value="fuel">Fuel</option>
-          <option value="fuel_rods">Fuel Rods</option>
-          <option value="rare_earth">Rare Earth</option>
-          <option value="advanced_circuits">Adv. Circuits</option>
-          <option value="solar_cells">Solar Cells</option>
-          <option value="regolith_iron">Regolith Iron</option>
-          <option value="martian_ice">Martian Ice</option>
-          <option value="co2">CO2</option>
-          <option value="energy">Energy</option>
-          <option value="knowledge">Knowledge</option>
-          <option value="military">Military Power</option>
+          <optgroup label="Resources">
+            <option value="currency">Currency</option>
+            <option value="energy">Energy</option>
+            <option value="knowledge">Knowledge</option>
+            <option value="military">Military Power</option>
+          </optgroup>
+          <optgroup label="Materials">
+            <option value="coal">Coal</option>
+            <option value="iron_ore">Iron Ore</option>
+            <option value="steel">Steel</option>
+            <option value="silicon">Silicon</option>
+            <option value="copper">Copper</option>
+            <option value="electronics">Electronics</option>
+            <option value="uranium">Uranium</option>
+            <option value="fuel">Fuel</option>
+            <option value="fuel_rods">Fuel Rods</option>
+            <option value="rare_earth">Rare Earth</option>
+            <option value="advanced_circuits">Adv. Circuits</option>
+            <option value="solar_cells">Solar Cells</option>
+            <option value="water">Water</option>
+          </optgroup>
+          <optgroup label="Mars Resources">
+            <option value="regolith_iron">Regolith Iron</option>
+            <option value="martian_ice">Martian Ice</option>
+            <option value="co2">CO2</option>
+          </optgroup>
+          <optgroup label="Special">
+            <option value="morale">Morale</option>
+            <option value="approval">Public Approval</option>
+            <option value="advance_era">Advance Era</option>
+            <option value="kill_un">Destroy UN (set power to 0)</option>
+            <option value="max_storage">Max Energy Storage +50k</option>
+            <option value="unlock_mars">Unlock Mars</option>
+            <option value="unlock_space">Unlock Space</option>
+            <option value="unlock_dyson">Unlock Dyson</option>
+          </optgroup>
         </select>
         <input id="russia-cheat-amount" type="number" value="9000000000" min="1" style="width:130px;padding:6px 10px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#f8fafc;font-size:14px;" />
         <button class="gs-action-btn" data-action='${JSON.stringify({ type: 'russia_cheat', payload: {} })}'>💰 Grant</button>
