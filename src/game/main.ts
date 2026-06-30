@@ -154,6 +154,9 @@ function boot(): void {
     eventController.dispatch();
     shell.celebrate();
     shell.notify(`🎉 Advanced to the ${advanced.currentEra.replace('_', ' ')} era!`, 'success');
+    // Force an immediate HUD + panel refresh so the era label updates at once.
+    shell.render(advanced);
+    shell.refreshActivePanel();
   }
 
   function completeBuild(loop: GameLoop, order: BuildOrder): void {

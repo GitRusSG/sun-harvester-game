@@ -942,3 +942,148 @@ path.gs-svgmap-country[data-status="hostile"] { fill: #ef4444; }
   line-height: 1.4;
   text-align: center;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   COOL MAKEOVER — cohesive sci-fi theme, neon accents, refined type
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --accent: #38bdf8;        /* cyan */
+  --accent-2: #a855f7;      /* violet */
+  --accent-warm: #fbbf24;   /* amber */
+  --bg-deep: #060b16;
+  --bg-panel: rgba(13, 20, 36, 0.92);
+  --border-soft: rgba(120, 160, 220, 0.22);
+}
+
+/* HUD — sleek glass bar with a cyan underglow */
+.gs-hud {
+  background: linear-gradient(180deg, rgba(10,16,30,0.96), rgba(10,16,30,0.78));
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: 0 2px 24px rgba(56,189,248,0.12);
+}
+.gs-hud-item {
+  background: rgba(20,30,52,0.7);
+  border: 1px solid var(--border-soft);
+  letter-spacing: 0.02em;
+}
+.gs-hud-btn {
+  background: linear-gradient(180deg, #1c2c4a, #14213a);
+  border: 1px solid var(--border-soft);
+  letter-spacing: 0.02em;
+}
+.gs-hud-btn:hover {
+  background: linear-gradient(180deg, var(--accent), #0ea5e9);
+  color: #04121f;
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(56,189,248,0.45);
+}
+
+/* Panels — deep glass with a gradient left edge accent */
+.gs-panel {
+  background: var(--bg-panel);
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(180deg, var(--accent), var(--accent-2)) 1;
+  box-shadow: -10px 0 50px rgba(0,0,0,0.6), inset 1px 0 0 rgba(255,255,255,0.05);
+}
+.gs-panel-header {
+  background: linear-gradient(180deg, rgba(56,189,248,0.08), transparent);
+  border-bottom: 1px solid var(--border-soft);
+}
+.gs-panel-title {
+  background: linear-gradient(90deg, #e0f2fe, #bae6fd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Section titles — neon tab style */
+.gs-section-title {
+  border-left: 3px solid var(--accent);
+  color: #7dd3fc;
+  text-shadow: 0 0 10px rgba(56,189,248,0.3);
+}
+
+/* Stat cards — glassy with cyan hover ring */
+.gs-stat {
+  background: linear-gradient(160deg, rgba(28,40,66,0.9), rgba(16,24,42,0.9));
+  border: 1px solid var(--border-soft);
+}
+.gs-stat:hover {
+  border-color: rgba(56,189,248,0.5);
+  box-shadow: 0 0 16px rgba(56,189,248,0.18);
+}
+.gs-stat-value { color: #f0f9ff; }
+
+/* Action buttons — neon-edged glass */
+.gs-action-btn {
+  background: linear-gradient(160deg, rgba(28,42,68,0.95), rgba(16,24,44,0.95));
+  border: 1px solid var(--border-soft);
+  color: #e0f2fe;
+}
+.gs-action-btn:hover:not(:disabled) {
+  background: linear-gradient(160deg, var(--accent), #0ea5e9);
+  color: #04121f;
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(56,189,248,0.35);
+}
+
+/* Era advance & primary CTAs glow amber to stand out */
+.gs-action-btn[data-action*="advance_era"] {
+  background: linear-gradient(160deg, #2a2140, #1a1530);
+  border-color: rgba(251,191,36,0.5);
+  animation: gs-pulse-glow 2.2s ease-in-out infinite;
+}
+.gs-action-btn[data-action*="advance_era"]:hover:not(:disabled) {
+  background: linear-gradient(160deg, var(--accent-warm), #f59e0b);
+  color: #1a1200;
+}
+@keyframes gs-pulse-glow {
+  0%,100% { box-shadow: 0 0 8px rgba(251,191,36,0.2); }
+  50% { box-shadow: 0 0 22px rgba(251,191,36,0.5); }
+}
+
+/* Country selection — cinematic */
+.gs-country-overlay {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(56,189,248,0.12), transparent 60%),
+    radial-gradient(circle at 50% 110%, rgba(168,85,247,0.12), transparent 60%),
+    var(--bg-deep);
+}
+.gs-country-title {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.gs-country-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 10px 30px rgba(56,189,248,0.25);
+}
+
+/* Map host — space vignette with cyan rim */
+.gs-svgmap-host {
+  border: 1px solid var(--border-soft);
+  box-shadow: inset 0 0 70px rgba(0,0,0,0.7), 0 0 0 1px rgba(56,189,248,0.08);
+}
+
+/* Build queue bar — animated accent */
+.gs-queue-bar {
+  background: linear-gradient(180deg, rgba(20,30,52,0.92), rgba(14,22,40,0.92));
+  border-bottom: 1px solid var(--border-soft);
+}
+.gs-queue-label { color: var(--accent); }
+.gs-queue-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px rgba(56,189,248,0.5);
+}
+
+/* Scrollbar styling for panels */
+.gs-panel::-webkit-scrollbar { width: 8px; }
+.gs-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+.gs-panel::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--accent), var(--accent-2));
+  border-radius: 4px;
+}
