@@ -651,12 +651,17 @@ export class GameShell {
     const isControlled = state.political.installedPoliticians.includes(id);
 
     if (isControlled) {
-      // Controlled country → open Build panel (same grid, more building slots)
+      // Controlled country → shows tax income + build access
+      const economy = profile.startingResources.currency ?? 800;
+      const taxPerTick = (economy * 0.02).toFixed(1);
       this.panelTitle.textContent = `🏗️ ${profile.name} (Controlled)`;
       this.panelContent.innerHTML = `
-        <p class="gs-positive">✓ This country is under your control. Build infrastructure here.</p>
-        ${this.renderPlacementGrid(state)}
-        <p class="gs-muted">Use the Build panel to add structures to your territories.</p>
+        <p class="gs-positive">✓ This country is under your control.</p>
+        <div class="gs-stat-grid">
+          <div class="gs-stat"><span class="gs-stat-label">💰 Tax Income</span><span class="gs-stat-value gs-positive">+${taxPerTick}/tick</span></div>
+          <div class="gs-stat"><span class="gs-stat-label">Influence</span><span class="gs-stat-value">${influence.toFixed(0)}%</span></div>
+        </div>
+        <p class="gs-muted">Controlled countries pay you taxes each tick. Keep influence above 50% or risk a coup. Control 5+ countries for World Domination (×1.5 tax bonus).</p>
       `;
       return;
     }

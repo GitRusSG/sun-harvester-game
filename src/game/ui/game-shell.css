@@ -465,3 +465,168 @@ path.gs-svgmap-country[data-status="hostile"] { fill: #dc2626; }
   0% { background: rgba(251, 191, 36, 0.3); }
   100% { background: transparent; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   VISUAL POLISH LAYER — richer gradients, glows, smoother motion
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* HUD: gradient bar with subtle glow and pill-style items */
+.gs-hud {
+  background: linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.8) 100%);
+  border-bottom: 1px solid rgba(148,163,184,0.25);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.45);
+  padding: 10px 18px;
+}
+
+.gs-hud-item {
+  background: rgba(30,41,59,0.6);
+  border: 1px solid rgba(148,163,184,0.18);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.gs-hud-btn {
+  background: linear-gradient(180deg, #3b4d68 0%, #2c3a52 100%);
+  border: 1px solid rgba(148,163,184,0.3);
+  border-radius: 6px;
+  font-weight: 600;
+  transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.gs-hud-btn:hover {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251,191,36,0.35);
+}
+
+/* Panel: animated slide-in, gradient background, stronger depth */
+.gs-panel {
+  background: linear-gradient(160deg, rgba(17,26,46,0.97) 0%, rgba(12,18,32,0.97) 100%);
+  border-left: 1px solid rgba(148,163,184,0.25);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+  animation: gs-slide-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes gs-slide-in {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.gs-panel-header {
+  background: linear-gradient(180deg, rgba(30,41,59,0.5), transparent);
+  border-bottom: 1px solid rgba(148,163,184,0.2);
+}
+
+.gs-panel-title { letter-spacing: 0.01em; }
+
+/* Stat cards: subtle gradient + hover lift */
+.gs-stat {
+  background: linear-gradient(160deg, #1e293b 0%, #172033 100%);
+  border: 1px solid rgba(148,163,184,0.15);
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.gs-stat:hover {
+  transform: translateY(-1px);
+  border-color: rgba(148,163,184,0.35);
+}
+
+.gs-positive { color: #4ade80; text-shadow: 0 0 8px rgba(74,222,128,0.3); }
+.gs-negative { color: #f87171; }
+
+/* Action buttons: gradient + accent bar on hover */
+.gs-action-btn {
+  background: linear-gradient(160deg, #1e293b 0%, #172033 100%);
+  border: 1px solid rgba(148,163,184,0.25);
+  border-radius: 8px;
+  font-weight: 500;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.gs-action-btn:hover:not(:disabled) {
+  background: linear-gradient(160deg, #fbbf24 0%, #f59e0b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(251,191,36,0.3);
+}
+
+/* Section titles get a small accent underline */
+.gs-section-title {
+  border-left: 3px solid #fbbf24;
+  padding-left: 8px;
+}
+
+/* Country selection: gradient backdrop + card glow */
+.gs-country-overlay {
+  background: radial-gradient(circle at 50% 0%, rgba(30,41,59,0.97) 0%, rgba(8,12,22,0.99) 70%);
+}
+
+.gs-country-title {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+.gs-country-card {
+  background: linear-gradient(160deg, #1e293b 0%, #141d2e 100%);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.gs-country-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(251,191,36,0.25);
+}
+
+/* SVG map: glow on the host, drop-shadow on hovered country */
+.gs-svgmap-host {
+  background: radial-gradient(circle at 50% 40%, #122036 0%, #080d18 100%);
+  border: 1px solid rgba(148,163,184,0.2);
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+}
+
+.gs-svgmap-country path {
+  transition: fill 200ms ease, filter 200ms ease;
+}
+
+.gs-svgmap-country:hover path,
+path.gs-svgmap-country:hover {
+  fill: #f8fafc !important;
+  filter: drop-shadow(0 0 4px rgba(251,191,36,0.8));
+}
+
+/* Ownership colors with a soft glow */
+.gs-svgmap-country[data-status="player"] path,
+path.gs-svgmap-country[data-status="player"] { fill: #22c55e; }
+.gs-svgmap-country[data-status="controlled"] path,
+path.gs-svgmap-country[data-status="controlled"] { fill: #3b82f6; }
+.gs-svgmap-country[data-status="influenced"] path,
+path.gs-svgmap-country[data-status="influenced"] { fill: #f59e0b; }
+.gs-svgmap-country[data-status="hostile"] path,
+path.gs-svgmap-country[data-status="hostile"] { fill: #ef4444; }
+
+/* Toasts: rounded, glassy, with motion */
+.gs-toast {
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* Build queue progress: animated shimmer fill */
+.gs-queue-fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  box-shadow: 0 0 8px rgba(251,191,36,0.5);
+  transition: width 300ms ease;
+}
+
+/* Reduced-motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .gs-panel { animation: none; }
+  .gs-hud-btn:hover,
+  .gs-action-btn:hover:not(:disabled),
+  .gs-stat:hover,
+  .gs-country-card:hover { transform: none; }
+}

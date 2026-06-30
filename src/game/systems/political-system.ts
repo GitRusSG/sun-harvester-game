@@ -1,5 +1,6 @@
 import type { GameState, GameAction, StateUpdate, Era, CountryId, StateMutation, GameEvent } from '../core/types.js';
 import type { PoliticalOperation, InfluenceMethod } from '../core/opposition.js';
+import { COUNTRY_PROFILES } from '../data/countries.js';
 
 /**
  * Influence growth rates per tick per method.
@@ -26,6 +27,12 @@ const RESOURCE_POOLING_EFFICIENCY = 0.6;
 
 /** Base production value per controlled country (abstract unit for resource pooling) */
 const BASE_COUNTRY_PRODUCTION = 50;
+
+/** Fraction of a controlled country's economy collected as tax each tick. */
+const TAX_RATE_PER_TICK = 0.02;
+
+/** Tax income multiplier once World Domination is achieved (global cooperation). */
+const WORLD_DOMINATION_TAX_MULTIPLIER = 1.5;
 
 /**
  * All country IDs in the game. Used to determine non-player countries.
@@ -221,16 +228,27 @@ export class PoliticalSystem {
     mutations.push({ path: 'political.activeOperations', value: activeOperations });
     mutations.push({ path: 'political.worldDominationAchieved', value: worldDominationAchieved });
 
-    // Apply global resource pooling bonus as income if world domination achieved
+    // Tax income: every controlled country pays you taxes based on its economy.
+    // Each controlled country contributes a tax based on its starting currency
+    // (a proxy for economic strength). World Domination boosts the tax rate.
     const update: StateUpdate = {
       mutations,
       events: events.length > 0 ? events : undefined,
     };
 
-    if (worldDominationAchieved) {
-      const pooledResources = installedPoliticians.length * BASE_COUNTRY_PRODUCTION * RESOURCE_POOLING_EFFICIENCY;
+    if (installedPoliticians.length > 0) {
+      let taxIncome = 0;
+      for (const country of installedPoliticians) {
+        const profile = COUNTRY_PROFILES[country];
+        const economy = profile?.startingResources.currency ?? 800;
+        // Base tax: 2% of the country's economy per tick.
+        taxIncome += economy * TAX_RATE_PER_TICK;
+      }
+      // World Domination grants a global cooperation bonus to all tax income.
+      if (worldDominationAchieved) taxIncome *= WORLD_DOMINATION_TAX_MULTIPLIER;
+
       update.resources = {
-        currency: state.resources.currency + pooledResources * deltaTicks,
+        currency: state.resources.currency + taxIncome * deltaTicks,
       };
     }
 
