@@ -454,6 +454,53 @@ export class GameShell {
       </div>
       <h3 class="gs-section-title">Era Progression</h3>
       ${eraInfo}
+      ${this.renderOppositionInfo(state)}
+    `;
+  }
+
+  /**
+   * Surfaces the UN/opposition state and active effects that otherwise run
+   * invisibly: public approval, UN hostility/power, sanctions, protests.
+   */
+  private renderOppositionInfo(state: GameState): string {
+    const opp = state.opposition;
+    const approvalColor = opp.publicApproval >= 50 ? 'gs-positive' : 'gs-negative';
+    const hostilityColor = opp.unHostility < 40 ? 'gs-positive' : opp.unHostility < 70 ? '' : 'gs-negative';
+
+    // Total sanction cost increase and protest slowdown, so the player sees
+    // exactly what these hidden effects are doing.
+    const sanctionPct = opp.activeSanctions.reduce((sum, s) => sum + s.severity, 0);
+    const protestSlow = opp.activeProtests.reduce((sum, p) => sum + p.severity, 0);
+
+    const militaryVsUN = state.weapons.militaryPower >= opp.unPowerLevel
+      ? `<span class="gs-positive">You outgun the UN ✓</span>`
+      : `<span class="gs-negative">UN is stronger (need ${formatNumber(opp.unPowerLevel)} power)</span>`;
+
+    let effects = '';
+    if (sanctionPct > 0) {
+      effects += `<p class="gs-negative">⚠️ Sanctions: +${sanctionPct.toFixed(0)}% trade costs (${opp.activeSanctions.length} active)</p>`;
+    }
+    if (protestSlow > 0) {
+      effects += `<p class="gs-negative">✊ Protests: -${(protestSlow * 100).toFixed(0)}% construction speed (${opp.activeProtests.length} active)</p>`;
+    }
+    if (opp.publicApproval < 30) {
+      effects += `<p class="gs-negative">🚫 Approval below 30% — new construction is blocked!</p>`;
+    }
+    if (!effects) {
+      effects = `<p class="gs-muted">No active sanctions or protests. The UN is watching.</p>`;
+    }
+
+    return `
+      <h3 class="gs-section-title">🌐 UN & Opposition</h3>
+      <div class="gs-stat-grid">
+        <div class="gs-stat"><span class="gs-stat-label">Public Approval</span><span class="gs-stat-value ${approvalColor}">${opp.publicApproval.toFixed(0)}%</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">UN Hostility</span><span class="gs-stat-value ${hostilityColor}">${opp.unHostility.toFixed(0)}%</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">UN Power</span><span class="gs-stat-value">${formatNumber(opp.unPowerLevel)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Your Military</span><span class="gs-stat-value">${formatNumber(state.weapons.militaryPower)}</span></div>
+      </div>
+      <p class="gs-muted">${militaryVsUN}</p>
+      ${effects}
+      <p class="gs-muted">💡 More energy output & territory raises UN hostility. Build military to deter attacks; run Education Campaigns (Earth panel) to raise approval.</p>
     `;
   }
 

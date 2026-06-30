@@ -18,6 +18,7 @@ const AUTO_SAVE_INTERVAL_MS = 60_000;
 const TICK_INTERVAL_MS = 1000;
 
 export type RenderCallback = (state: GameState) => void;
+export type EventsCallback = (events: import('./types.js').GameEvent[]) => void;
 
 /**
  * The GameLoop class is the central orchestrator for the Sun Harvester game.
@@ -35,6 +36,7 @@ export class GameLoop {
   private systems: GameSystem[] = [];
   private state: GameState;
   private renderCallback: RenderCallback | null = null;
+  private eventsCallback: EventsCallback | null = null;
 
   private tickIntervalId: ReturnType<typeof setInterval> | null = null;
   private autoSaveIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -60,6 +62,11 @@ export class GameLoop {
    */
   setRenderCallback(callback: RenderCallback): void {
     this.renderCallback = callback;
+  }
+
+  /** Sets a callback invoked with any GameEvents produced during a tick. */
+  setEventsCallback(callback: EventsCallback): void {
+    this.eventsCallback = callback;
   }
 
   /**
@@ -194,9 +201,17 @@ export class GameLoop {
     const currentEra = this.state.currentEra;
     const activeSystems = this.getActiveSystemsForEra(currentEra);
 
+    const collectedEvents: import('./types.js').GameEvent[] = [];
     for (const system of activeSystems) {
       const update: StateUpdate = system.update(this.state, deltaTicks);
+      if (update.events && update.events.length > 0) {
+        collectedEvents.push(...update.events);
+      }
       this.state = applyUpdate(this.state, update);
+    }
+
+    if (collectedEvents.length > 0 && this.eventsCallback) {
+      this.eventsCallback(collectedEvents);
     }
 
     // Update play time statistics

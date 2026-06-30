@@ -221,10 +221,14 @@ function boot(): void {
       research_complete: `Research done: ${event.payload.nodeId}`,
       crafting_complete: `Crafted: ${event.payload.recipeName}`,
       victory: '🏆 Dyson Ring complete!',
-      un_attack: `UN attack: ${event.payload.attackType}`,
+      un_attack: `🌐 UN attack: ${event.payload.attackType}${event.payload.severity ? ` (severity ${Number(event.payload.severity).toFixed(1)})` : ''}`,
+      protest: `✊ Protest: ${event.payload.cause} — construction slowed`,
       alien_signal: 'Alien signal detected!',
+      politician_installed: `🎩 Politician installed in ${event.payload.country}`,
+      coup: `💥 Coup! Lost control of ${event.payload.country}`,
     };
-    if (msgs[event.type]) shell.notify(msgs[event.type], 'info');
+    const type = event.type === 'un_attack' ? 'error' : event.type === 'protest' || event.type === 'coup' ? 'warning' : 'info';
+    if (msgs[event.type]) shell.notify(msgs[event.type], type);
   });
 
   // ─── Action Handler ─────────────────────────────────────────────────────
@@ -372,6 +376,12 @@ function boot(): void {
     gameLoop = loop;
     if (simulationIntervalId !== null) { clearInterval(simulationIntervalId); simulationIntervalId = null; }
     for (const system of gameSystems) loop.registerSystem(system);
+
+    // Dispatch events produced by system ticks (UN attacks, protests, etc.).
+    loop.setEventsCallback((events) => {
+      eventController.enqueue(events);
+      eventController.dispatch();
+    });
 
     let lastRender = 0;
     // ─── Simulation step (runs on a 1s interval, independent of rendering) ──
