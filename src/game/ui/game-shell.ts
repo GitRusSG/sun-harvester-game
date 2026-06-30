@@ -569,7 +569,7 @@ export class GameShell {
     this.panelTitle.textContent = '⚙️ Settings';
     this.panelContent.innerHTML = `
       <div class="gs-action-list">
-        <button class="gs-action-btn gs-danger" onclick="try{localStorage.clear()}catch(e){} window.location.reload();">🔄 Restart Game</button>
+        <button class="gs-action-btn gs-danger" data-action='${JSON.stringify({ type: 'restart_game', payload: {} })}'>🔄 Restart Game (pick new country)</button>
         <button class="gs-action-btn" onclick="document.dispatchEvent(new CustomEvent('shg-export'))">💾 Export Save</button>
       </div>
       <h3 class="gs-section-title">Credits</h3>

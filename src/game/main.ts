@@ -197,6 +197,14 @@ function boot(): void {
       return;
     }
 
+    // ─── Restart Game (show country selection) ──────────────────────────
+    if (action.type === 'restart_game') {
+      try { localStorage.clear(); } catch { /* */ }
+      if (gameLoop) { gameLoop.stop(); gameLoop = null; }
+      shell.showCountrySelection((country) => startGame(country));
+      return;
+    }
+
     // ─── Country Attack (luck + quantity combat) ────────────────────────
     if (action.type === 'attack_country') {
       const state = gameLoop.getState();
