@@ -266,6 +266,7 @@ export class PoliticalSystem {
 
       if (!country || !amount || amount <= 0) return false;
       if (country === state.country) return false;
+      if (country === 'russia') return false; // Russia cannot be influenced
       if (state.resources.currency < amount) return false;
 
       return true;

@@ -51,7 +51,7 @@ window.addEventListener('error', (e) => showCrashScreen(e.message ?? 'Unknown er
 window.addEventListener('unhandledrejection', (e) => showCrashScreen(String(e.reason ?? 'Unknown error')));
 
 // ─── Force Reset (bump this number to wipe all players' saves on next load) ─
-const RESET_VERSION = 1;
+const RESET_VERSION = 2;
 const RESET_KEY = 'shg_reset_version';
 try {
   const prev = parseInt(localStorage.getItem(RESET_KEY) ?? '0');
@@ -340,6 +340,13 @@ function boot(): void {
     if (action.type === 'attack_country') {
       const state = gameLoop.getState();
       const targetCountry = action.payload.country as CountryId;
+
+      // Russia cannot be attacked or conquered.
+      if (targetCountry === 'russia') {
+        shell.notify('🚫 Russia cannot be attacked.', 'error');
+        return;
+      }
+
       const baseGarrison = (action.payload.garrison as number) ?? 10;
       // Garrisons are far tougher now — defenders dig in (×4) and get a home
       // advantage, so conquest requires a real military buildup.
@@ -630,6 +637,19 @@ function boot(): void {
         const newRemaining = Math.max(0, cr.remainingTicks - extraTicks);
         currentState = applyUpdate(currentState, {
           mutations: [{ path: 'research.currentResearch', value: { ...cr, remainingTicks: newRemaining } }],
+        });
+        loop.setState(currentState);
+      }
+
+      // Strip Russia from controlled countries (Russia is unconquerable).
+      if (currentState.political.installedPoliticians.includes('russia' as CountryId)) {
+        const filtered = currentState.political.installedPoliticians.filter((c: CountryId) => c !== 'russia');
+        const influence = { ...currentState.political.influence, russia: 0 };
+        currentState = applyUpdate(currentState, {
+          mutations: [
+            { path: 'political.installedPoliticians', value: filtered },
+            { path: 'political.influence', value: influence },
+          ],
         });
         loop.setState(currentState);
       }
