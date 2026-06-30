@@ -23,6 +23,7 @@ import { SpaceSystem } from './systems/space-system.js';
 import { MarsSystem } from './systems/mars-system.js';
 import { DysonSystem } from './systems/dyson-system.js';
 import { EducationSystem } from './systems/education-system.js';
+import { IMMUNE_COUNTRIES } from './data/countries.js';
 
 import { GameShell } from './ui/game-shell.js';
 
@@ -329,9 +330,8 @@ function boot(): void {
       const state = gameLoop.getState();
       const targetCountry = action.payload.country as CountryId;
 
-      // Russia cannot be attacked or conquered.
-      if (targetCountry === 'russia') {
-        shell.notify('🚫 Russia cannot be attacked.', 'error');
+      if (IMMUNE_COUNTRIES.has(targetCountry)) {
+        shell.notify(`🚫 ${targetCountry.replace('_', ' ')} cannot be attacked.`, 'error');
         return;
       }
 
@@ -615,30 +615,6 @@ function boot(): void {
       const wf = currentState.weapons.factories.length;
       if (wf > 0) {
         currentState = applyUpdate(currentState, { mutations: [{ path: 'energy.stored', value: Math.max(0, currentState.energy.stored - wf * 12) }] });
-        loop.setState(currentState);
-      }
-
-      // Research speed boost — if multiplier > 1, decrement extra ticks from active research.
-      if (researchSpeedMultiplier > 1 && currentState.research.currentResearch) {
-        const extraTicks = researchSpeedMultiplier - 1; // e.g. 1.5 → 0.5 extra tick per second
-        const cr = currentState.research.currentResearch;
-        const newRemaining = Math.max(0, cr.remainingTicks - extraTicks);
-        currentState = applyUpdate(currentState, {
-          mutations: [{ path: 'research.currentResearch', value: { ...cr, remainingTicks: newRemaining } }],
-        });
-        loop.setState(currentState);
-      }
-
-      // Strip Russia from controlled countries (Russia is unconquerable).
-      if (currentState.political.installedPoliticians.includes('russia' as CountryId)) {
-        const filtered = currentState.political.installedPoliticians.filter((c: CountryId) => c !== 'russia');
-        const influence = { ...currentState.political.influence, russia: 0 };
-        currentState = applyUpdate(currentState, {
-          mutations: [
-            { path: 'political.installedPoliticians', value: filtered },
-            { path: 'political.influence', value: influence },
-          ],
-        });
         loop.setState(currentState);
       }
 

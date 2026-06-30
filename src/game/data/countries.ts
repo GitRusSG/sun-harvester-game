@@ -1,6 +1,13 @@
 import type { CountryProfile } from '../core/country.js';
 import type { CountryId } from '../core/types.js';
 
+// ─── Country Immunity Toggle ─────────────────────────────────────────────────
+// Countries listed here cannot be attacked or influenced by other players.
+// Toggle by adding/removing country IDs from this set.
+export const IMMUNE_COUNTRIES: Set<CountryId> = new Set([
+  // 'russia',  // Uncomment to make Russia unconquerable
+]);
+
 export const COUNTRY_PROFILES: Record<CountryId, CountryProfile> = {
   usa: {
     id: 'usa',

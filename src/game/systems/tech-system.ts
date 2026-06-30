@@ -132,7 +132,11 @@ export class TechSystem {
     const current = state.research.currentResearch;
     if (!current) return {};
 
-    const remaining = current.remainingTicks - deltaTicks;
+    // Apply research speed multiplier (stored in localStorage by upgrade system).
+    let speedMultiplier = 1.0;
+    try { const r = localStorage.getItem('shg_research_speed'); if (r) speedMultiplier = parseFloat(r) || 1.0; } catch { /* */ }
+    const effectiveDelta = deltaTicks * speedMultiplier;
+    const remaining = current.remainingTicks - effectiveDelta;
 
     if (remaining > 0) {
       // Research still in progress, update remaining ticks and progress

@@ -1,6 +1,6 @@
 import type { GameState, GameAction, StateUpdate, Era, CountryId, StateMutation, GameEvent } from '../core/types.js';
 import type { PoliticalOperation, InfluenceMethod } from '../core/opposition.js';
-import { COUNTRY_PROFILES } from '../data/countries.js';
+import { COUNTRY_PROFILES, IMMUNE_COUNTRIES } from '../data/countries.js';
 
 /**
  * Influence growth rates per tick per method.
@@ -266,7 +266,7 @@ export class PoliticalSystem {
 
       if (!country || !amount || amount <= 0) return false;
       if (country === state.country) return false;
-      if (country === 'russia') return false; // Russia cannot be influenced
+      if (IMMUNE_COUNTRIES.has(country)) return false;
       if (state.resources.currency < amount) return false;
 
       return true;
