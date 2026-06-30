@@ -142,6 +142,9 @@ export function createInitialState(country: CountryId): GameState {
     resources: {} as Record<MaterialType, number>,
     productionRates: {} as Record<MaterialType, number>,
     launchCostReduction: 1.0,
+    rooms: [],
+    population: 0,
+    maxPopulation: 10,
   };
   for (const mat of allMaterials) {
     mars.resources[mat] = 0;
@@ -331,6 +334,9 @@ export function createNewGame(country: CountryId): GameState {
     resources: {} as Record<MaterialType, number>,
     productionRates: {} as Record<MaterialType, number>,
     launchCostReduction: 1.0,
+    rooms: [],
+    population: 0,
+    maxPopulation: 10,
   };
   for (const mat of allMaterials) {
     mars.resources[mat] = 0;

@@ -31,6 +31,8 @@ import {
   MAX_KNOWLEDGE_SPEED,
   MAX_RESEARCH_SPEED,
   MAX_PROTEST_SUPPRESSION,
+  MAX_MORALE_RETAINMENT,
+  PAYOFF_PROTESTERS_BASE_COST,
   INSTANT_BUILD_TICKS,
   INFINITE_QUEUE_SIZE,
   TIMEWARP_COST,
@@ -38,6 +40,7 @@ import {
 } from './data/commands.js';
 
 import { GameShell } from './ui/game-shell.js';
+import { formatNumber } from './utils/format.js';
 
 // ─── Crash Handler (registered FIRST) ──────────────────────────────────────
 
@@ -103,6 +106,7 @@ function boot(): void {
   let autoMoraleThreshold = 50;
   let timewarpUnlocked = false;
   let timewarpActive = false;
+  let moraleRetainmentLevel = 0; // reduces morale decay per level
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
   try { const q = localStorage.getItem('shg_queue_max'); if (q) maxQueueSize = parseInt(q); } catch { /* */ }
   try { const s = localStorage.getItem('shg_build_speed'); if (s) buildSpeedMultiplier = parseFloat(s); } catch { /* */ }
@@ -113,6 +117,7 @@ function boot(): void {
   try { const t = localStorage.getItem('shg_auto_morale_threshold'); if (t) autoMoraleThreshold = parseInt(t); } catch { /* */ }
   try { const tw = localStorage.getItem('shg_timewarp_unlocked'); if (tw) timewarpUnlocked = tw === '1'; } catch { /* */ }
   try { const ta = localStorage.getItem('shg_timewarp_active'); if (ta) timewarpActive = ta === '1'; } catch { /* */ }
+  try { const mr = localStorage.getItem('shg_morale_retain'); if (mr) moraleRetainmentLevel = parseInt(mr); } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
 
@@ -336,6 +341,7 @@ function boot(): void {
       autoMoraleThreshold = 50;
       timewarpUnlocked = false;
       timewarpActive = false;
+      moraleRetainmentLevel = 0;
       buildQueue.length = 0;
       shell.setBuildQueue(buildQueue);
       shell.setMorale(morale);
@@ -529,6 +535,23 @@ function boot(): void {
           try { localStorage.setItem('shg_timewarp_active', timewarpActive ? '1' : '0'); } catch { /* */ }
           shell.notify(timewarpActive ? '⏩ Time Warp ACTIVE! (×' + TIMEWARP_SPEED + ' speed)' : '⏸️ Time Warp OFF', 'info');
           break;
+        case 'morale_retainment':
+          if (moraleRetainmentLevel >= MAX_MORALE_RETAINMENT) { shell.notify('Morale retainment maxed!', 'warning'); break; }
+          moraleRetainmentLevel += 1;
+          try { localStorage.setItem('shg_morale_retain', String(moraleRetainmentLevel)); } catch { /* */ }
+          shell.notify(`😊 Morale retainment level ${moraleRetainmentLevel}! Decay reduced.`, 'success');
+          break;
+        case 'payoff_protesters': {
+          const hostility = gameLoop.getState().opposition.unHostility;
+          const payoffCost = Math.floor(PAYOFF_PROTESTERS_BASE_COST * Math.max(1, hostility / 10));
+          if (upd.resources.currency < payoffCost) { shell.notify('Not enough currency!', 'error'); break; }
+          upd = applyUpdate(upd, {
+            resources: { currency: upd.resources.currency - payoffCost },
+            mutations: [{ path: 'opposition.unHostility', value: Math.max(0, hostility - 15) }],
+          });
+          shell.notify(`💰 Paid off protesters! Hostility -15 (cost $${formatNumber(payoffCost)})`, 'success');
+          break;
+        }
       }
       gameLoop.setState(upd);
       shell.render(gameLoop.getState());
@@ -696,6 +719,10 @@ function boot(): void {
       if (currentState.energy.stored < currentState.energy.maxStorage * 0.1) md -= 0.3;
       if (currentState.resources.currency < 100) md -= 0.6;
       md -= 0.02; // very mild constant decay
+      // Morale retainment reduces all negative drift
+      if (md < 0 && moraleRetainmentLevel > 0) {
+        md *= Math.max(0.2, 1 - moraleRetainmentLevel * 0.15); // each level blocks 15% of decay
+      }
       morale = Math.max(0, Math.min(100, morale + md));
       try { localStorage.setItem('shg_morale', morale.toFixed(1)); } catch { /* */ }
 

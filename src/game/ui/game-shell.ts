@@ -665,6 +665,8 @@ export class GameShell {
       <h3 class="gs-section-title">🛡️ Stability</h3>
       <div class="gs-action-list">
         ${btn('🛡️ Protest Suppression — $7000', { type: 'upgrade_buy', payload: { kind: 'protest_suppress', cost: 7000 } }, 7000, 'Reduces UN hostility over time. Each level = -0.5 hostility/sec (stacks).')}
+        ${btn('😊 Morale Retainment — $12000', { type: 'upgrade_buy', payload: { kind: 'morale_retainment', cost: 12000 } }, 12000, 'Reduces all morale decay by 15% per level (max 5 levels = 75% less decay).')}
+        ${btn('💰 Pay Off Protesters — $varies', { type: 'upgrade_buy', payload: { kind: 'payoff_protesters', cost: 0 } }, 0, 'Instantly reduces UN hostility by 15. Cost scales with current hostility level.')}
         ${btn('🤖 Auto-Morale Toggle — $3000', { type: 'upgrade_buy', payload: { kind: 'auto_morale_toggle', cost: 3000 } }, 3000, 'Toggle automatic morale maintenance. Spends $200/sec when morale drops below 50.')}
       </div>
 

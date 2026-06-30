@@ -7,7 +7,28 @@ export interface MarsState {
   resources: Record<MaterialType, number>;
   productionRates: Record<MaterialType, number>;
   launchCostReduction: number; // multiplier from low gravity
+  rooms: MarsRoom[];
+  population: number;
+  maxPopulation: number;
 }
+
+export interface MarsRoom {
+  id: string;
+  type: MarsRoomType;
+  level: number;
+  floor: number;
+  slot: number;
+}
+
+export type MarsRoomType =
+  | 'power_gen'
+  | 'water_extract'
+  | 'mine'
+  | 'greenhouse'
+  | 'fuel_refinery'
+  | 'habitat'
+  | 'storage'
+  | 'lab';
 
 export interface SpaceState {
   unlocked: boolean;

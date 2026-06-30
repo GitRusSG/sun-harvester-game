@@ -29,6 +29,12 @@ export const MAX_RESEARCH_SPEED = 1000.0;
 // Max protest suppression level.
 export const MAX_PROTEST_SUPPRESSION = 100;
 
+// Max morale retainment level (reduces morale decay).
+export const MAX_MORALE_RETAINMENT = 5;
+
+// Pay off protesters cost multiplier (base cost × UN hostility).
+export const PAYOFF_PROTESTERS_BASE_COST = 5000;
+
 // ─── Instant Build (applies when infinite unlocked) ──────────────────────────
 // Build time in ticks when infinite mode is active. 1 = completes next tick.
 export const INSTANT_BUILD_TICKS = 1;
