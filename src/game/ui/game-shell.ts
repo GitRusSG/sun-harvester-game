@@ -475,6 +475,7 @@ export class GameShell {
       ${this.renderSpendingBreakdown(state)}
       <h3 class="gs-section-title">Era Progression</h3>
       ${eraInfo}
+      ${this.renderMilestones(state)}
       ${this.renderOppositionInfo(state)}
     `;
   }
@@ -517,6 +518,43 @@ export class GameShell {
     }
     if (taxCountries > 0) {
       html += `<div class="gs-stat"><span class="gs-stat-label">💰 Tax Income (×${taxCountries} countries)</span><span class="gs-stat-value gs-positive">+income</span></div>`;
+    }
+    html += '</div>';
+    return html;
+  }
+
+  private renderMilestones(state: GameState): string {
+    const eraIdx = ERA_ORDER.indexOf(state.currentEra);
+    const controlled = state.political.installedPoliticians.length;
+    const military = state.weapons.militaryPower;
+    const buildings = state.energy.solarPanels.length + state.energy.powerPlants.length + state.infrastructure.mines.length;
+    const labs = state.statistics.totalResearchCompleted;
+
+    const milestones: { label: string; done: boolean }[] = [
+      { label: '⚡ Build first power source', done: state.energy.solarPanels.length > 0 || state.energy.powerPlants.length > 0 },
+      { label: '⛏️ Build first mine', done: state.infrastructure.mines.length > 0 },
+      { label: '🔬 Build a research lab', done: labs > 0 },
+      { label: '⚒️ Craft your first item', done: state.statistics.totalMaterialsCrafted > 0 },
+      { label: '🔫 Reach 50 military power', done: military >= 50 },
+      { label: '⚔️ Conquer a country', done: controlled >= 1 },
+      { label: '☢️ Reach Nuclear Era', done: eraIdx >= 1 },
+      { label: '☀️ Reach Solar Era', done: eraIdx >= 2 },
+      { label: '🏗️ Own 10+ buildings', done: buildings >= 10 },
+      { label: '🔫 Reach 500 military power', done: military >= 500 },
+      { label: '🌐 Control 3 countries', done: controlled >= 3 },
+      { label: '🛰️ Reach Orbital Era', done: eraIdx >= 3 },
+      { label: '🔴 Reach Mars Era', done: eraIdx >= 4 },
+      { label: '📡 Build Mars Relay', done: !!(state.mars as any).relayBuilt },
+      { label: '👽 Contact Aliens', done: state.alien.encountered },
+      { label: '🌍 World Domination (5+ countries)', done: controlled >= 5 },
+      { label: '⛏️ Reach Space Mining Era', done: eraIdx >= 5 },
+      { label: '💫 Reach Dyson Ring Era', done: eraIdx >= 6 },
+    ];
+
+    const completed = milestones.filter(m => m.done).length;
+    let html = `<h3 class="gs-section-title">🏆 Milestones (${completed}/${milestones.length})</h3><div style="display:grid;gap:4px;">`;
+    for (const m of milestones) {
+      html += `<div style="padding:4px 8px;border-radius:4px;background:${m.done ? '#064e3b' : '#1e293b'};color:${m.done ? '#6ee7b7' : '#64748b'};font-size:13px;">${m.done ? '✅' : '⬜'} ${m.label}</div>`;
     }
     html += '</div>';
     return html;

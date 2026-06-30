@@ -7,17 +7,17 @@ import { COUNTRY_PROFILES, IMMUNE_COUNTRIES } from '../data/countries.js';
  * Higher-risk methods provide faster influence gain.
  */
 const INFLUENCE_RATES: Record<InfluenceMethod, number> = {
-  economic_aid: 0.2,
-  propaganda: 0.12,
-  corporate_infiltration: 0.35,
-  intelligence: 0.5,
+  economic_aid: 0.04,
+  propaganda: 0.025,
+  corporate_infiltration: 0.07,
+  intelligence: 0.1,
 };
 
 /** Threshold above which a politician gets installed */
-const INSTALL_THRESHOLD = 75;
+const INSTALL_THRESHOLD = 85;
 
 /** Threshold below which an installed politician is removed via coup */
-const COUP_THRESHOLD = 50;
+const COUP_THRESHOLD = 60;
 
 /** Number of countries that must be controlled for World Domination */
 const WORLD_DOMINATION_COUNT = 5;
@@ -178,8 +178,19 @@ export class PoliticalSystem {
     }
     activeOperations = remainingOperations;
 
-    // Check for politician installations
+    // Natural influence decay — influence erodes over time unless actively maintained.
+    // Decay rate: 0.03/tick for uncontrolled, 0.015/tick for controlled countries.
     const nonPlayerCountries = ALL_COUNTRIES.filter((c) => c !== state.country);
+    for (const country of nonPlayerCountries) {
+      const current = influence[country] ?? 0;
+      if (current > 0) {
+        const isControlled = installedPoliticians.includes(country);
+        const decay = isControlled ? 0.015 : 0.03;
+        influence[country] = Math.max(0, current - decay * deltaTicks);
+      }
+    }
+
+    // Check for politician installations
     for (const country of nonPlayerCountries) {
       const countryInfluence = influence[country] ?? 0;
 

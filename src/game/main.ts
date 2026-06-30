@@ -364,22 +364,23 @@ function boot(): void {
       }
 
       const baseGarrison = (action.payload.garrison as number) ?? 10;
-      // Garrisons are far tougher now — defenders dig in (×4) and get a home
-      // advantage, so conquest requires a real military buildup.
-      const garrison = baseGarrison * 4;
+      // Garrisons scale with how many countries you already control — world domination gets progressively harder.
+      const controlledCount = state.political.installedPoliticians.length;
+      const scalingMultiplier = 4 + controlledCount * 3; // 4× base → 7× after 1, 10× after 2, etc.
+      const garrison = baseGarrison * scalingMultiplier;
       const attackPower = state.weapons.militaryPower;
 
-      if (attackPower < 10) { shell.notify('Need at least 10 military power!', 'error'); return; }
+      if (attackPower < 50) { shell.notify('Need at least 50 military power to attack!', 'error'); return; }
 
-      // Luck factor: attacker 0.6–1.2, defender 0.8–1.5 (home advantage).
-      const attackLuck = 0.6 + Math.random() * 0.6;
-      const defenseLuck = 0.8 + Math.random() * 0.7;
+      // Luck factor: attacker 0.5–1.1, defender 0.85–1.6 (home advantage).
+      const attackLuck = 0.5 + Math.random() * 0.6;
+      const defenseLuck = 0.85 + Math.random() * 0.75;
       const attackStrength = attackPower * attackLuck;
       const defenseStrength = garrison * defenseLuck;
       const won = attackStrength > defenseStrength;
 
-      // Attacking always costs you troops, win or lose.
-      const baseLoss = garrison * 0.4;
+      // Attacking always costs you troops, win or lose (more costly now).
+      const baseLoss = garrison * 0.6;
 
       const playerName = state.countryProfile?.name ?? 'You';
       const defName = targetCountry.replace('_', ' ');
