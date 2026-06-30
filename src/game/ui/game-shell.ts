@@ -90,6 +90,25 @@ export class GameShell {
     }, 3500);
   }
 
+  /** Burst of confetti for celebrations (e.g. era advancement). */
+  celebrate(): void {
+    const colors = ['#fbbf24', '#22c55e', '#3b82f6', '#ef4444', '#a855f7', '#f8fafc'];
+    const layer = document.createElement('div');
+    layer.className = 'gs-confetti-layer';
+    for (let i = 0; i < 120; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'gs-confetti';
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = `${Math.random() * 0.5}s`;
+      piece.style.animationDuration = `${2 + Math.random() * 2}s`;
+      piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+      layer.appendChild(piece);
+    }
+    this.container.appendChild(layer);
+    setTimeout(() => layer.remove(), 4500);
+  }
+
   /** Update HUD numbers in-place (no DOM rebuild). */
   render(state: GameState): void {
     this.state = state;
@@ -393,13 +412,14 @@ export class GameShell {
   }
 
   private getNextEraCostDisplay(state: GameState): string {
+    // These MUST match ERA_COSTS in main.ts or the button will mislead the player.
     const ERA_COSTS: Record<string, { currency: number; knowledge: number; steel: number; energy: number }> = {
-      nuclear: { currency: 5000, knowledge: 200, steel: 50, energy: 2000 },
-      solar: { currency: 15000, knowledge: 500, steel: 150, energy: 5000 },
-      orbital: { currency: 50000, knowledge: 1500, steel: 500, energy: 15000 },
-      mars_colonization: { currency: 150000, knowledge: 5000, steel: 2000, energy: 50000 },
-      space_mining: { currency: 500000, knowledge: 15000, steel: 8000, energy: 150000 },
-      dyson_ring: { currency: 2000000, knowledge: 50000, steel: 30000, energy: 500000 },
+      nuclear: { currency: 25000, knowledge: 800, steel: 250, energy: 8000 },
+      solar: { currency: 80000, knowledge: 3000, steel: 800, energy: 25000 },
+      orbital: { currency: 300000, knowledge: 10000, steel: 3000, energy: 80000 },
+      mars_colonization: { currency: 900000, knowledge: 30000, steel: 12000, energy: 250000 },
+      space_mining: { currency: 3000000, knowledge: 80000, steel: 40000, energy: 800000 },
+      dyson_ring: { currency: 12000000, knowledge: 300000, steel: 150000, energy: 3000000 },
     };
 
     const eraOrder = ['fossil', 'nuclear', 'solar', 'orbital', 'mars_colonization', 'space_mining', 'dyson_ring'];
@@ -412,14 +432,20 @@ export class GameShell {
     const cost = ERA_COSTS[nextEra];
     if (!cost) return '';
 
+    const moraleOk = this.morale >= 40;
     const canAfford =
       state.resources.currency >= cost.currency &&
       state.resources.knowledgePoints >= cost.knowledge &&
       (state.materials.stockpiles.steel ?? 0) >= cost.steel &&
-      state.energy.stored >= cost.energy;
+      state.energy.stored >= cost.energy &&
+      moraleOk;
 
     const check = (have: number, need: number) =>
       have >= need ? `<span class="gs-positive">${formatNumber(have)}/${formatNumber(need)} ✓</span>` : `<span class="gs-negative">${formatNumber(have)}/${formatNumber(need)} ✗</span>`;
+
+    const moraleCheck = moraleOk
+      ? `<span class="gs-positive">${this.morale.toFixed(0)}% ✓</span>`
+      : `<span class="gs-negative">${this.morale.toFixed(0)}% ✗ (need 40%)</span>`;
 
     return `
       <div class="gs-stat-grid" style="margin-bottom:12px">
@@ -428,8 +454,9 @@ export class GameShell {
         <div class="gs-stat"><span class="gs-stat-label">Knowledge</span>${check(state.resources.knowledgePoints, cost.knowledge)}</div>
         <div class="gs-stat"><span class="gs-stat-label">Steel</span>${check(state.materials.stockpiles.steel ?? 0, cost.steel)}</div>
         <div class="gs-stat"><span class="gs-stat-label">Energy Stored</span>${check(state.energy.stored, cost.energy)}</div>
+        <div class="gs-stat"><span class="gs-stat-label">Morale</span>${moraleCheck}</div>
       </div>
-      <button class="gs-action-btn ${canAfford ? '' : ''}" data-action='${JSON.stringify({ type: 'advance_era', payload: {} })}' ${canAfford ? '' : 'disabled'}>
+      <button class="gs-action-btn" data-action='${JSON.stringify({ type: 'advance_era', payload: {} })}' ${canAfford ? '' : 'disabled'}>
         🚀 Advance to ${nextEra.replace('_', ' ')} Era
       </button>
     `;

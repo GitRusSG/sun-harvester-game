@@ -152,6 +152,8 @@ function boot(): void {
     loop.setState(advanced);
     eventController.enqueue([{ id: `era_${Date.now()}`, type: 'era_unlock', payload: { era: advanced.currentEra }, timestamp: Date.now() }]);
     eventController.dispatch();
+    shell.celebrate();
+    shell.notify(`🎉 Advanced to the ${advanced.currentEra.replace('_', ' ')} era!`, 'success');
   }
 
   function completeBuild(loop: GameLoop, order: BuildOrder): void {
