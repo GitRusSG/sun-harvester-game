@@ -118,7 +118,9 @@ export class GameShell {
   }
 
   startTutorial(): void {
-    try { if (localStorage.getItem('shg_tutorial_done') === '1') return; } catch { /* storage blocked */ }
+    let done = false;
+    try { done = localStorage.getItem('shg_tutorial_done') === '1'; } catch { /* storage blocked */ }
+    if (done) return;
     this.tutorialActive = true;
     this.tutorialStep = 0;
     this.showTutorialStep();
