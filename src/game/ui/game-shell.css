@@ -836,3 +836,100 @@ path.gs-svgmap-country[data-status="hostile"] { fill: #ef4444; }
   font-weight: 800;
   min-height: 26px;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLOSS LAYER — glassmorphism, sheen, depth
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Glossy sheen sweep on buttons */
+.gs-action-btn, .gs-hud-btn, .gs-quiz-option, .gs-country-card {
+  position: relative;
+  overflow: hidden;
+}
+.gs-action-btn::after,
+.gs-hud-btn::after,
+.gs-quiz-option::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+.gs-action-btn:hover::after,
+.gs-hud-btn:hover::after,
+.gs-quiz-option:hover::after {
+  left: 125%;
+}
+
+/* Glass panels with inner highlight */
+.gs-panel {
+  box-shadow:
+    -8px 0 40px rgba(0,0,0,0.5),
+    inset 1px 0 0 rgba(255,255,255,0.06);
+}
+
+.gs-stat {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Glossy HUD pills */
+.gs-hud-item {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Subtle pulsing glow on the era/advance button */
+.gs-action-btn:not(:disabled) {
+  position: relative;
+}
+
+/* Glossy top highlight on quiz/battle cards */
+.gs-quiz-card::before,
+.gs-battle-stage::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent);
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+}
+.gs-quiz-card, .gs-battle-stage { position: relative; }
+
+/* Map host gets a glossy vignette */
+.gs-svgmap-host {
+  box-shadow:
+    inset 0 0 60px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* Toasts get a glossy top edge */
+.gs-toast {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* Section titles get a subtle gradient text feel via brightness */
+.gs-panel-title {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* Smooth everything */
+.gs-action-btn, .gs-hud-btn, .gs-stat, .gs-country-card, .gs-quiz-option {
+  will-change: transform;
+}

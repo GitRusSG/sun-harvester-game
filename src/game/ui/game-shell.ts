@@ -160,12 +160,22 @@ export class GameShell {
     this.state = state;
     this.navigator.updateState(state);
     this.updateHUD(state);
-    // If panel is open, update its content.
-    if (this.activePanel) {
-      this.renderPanel(this.activePanel, state);
+    // Live-refresh ONLY read-only panels (dashboard). Action panels (build,
+    // crafting, country, etc.) are NOT rebuilt every tick because that was
+    // destroying buttons mid-click. They refresh via refreshActivePanel()
+    // after an action instead.
+    if (this.activePanel === 'dashboard') {
+      this.renderPanel('dashboard', state);
     }
     // Show a pending quiz modal if one exists and isn't already showing.
     this.syncQuizModal(state);
+  }
+
+  /** Explicitly re-render the open panel (used after an action changes state). */
+  refreshActivePanel(): void {
+    if (this.activePanel && this.state) {
+      this.renderPanel(this.activePanel, this.state);
+    }
   }
 
   /** Shows or hides the quiz modal based on the pending quiz in state. */
