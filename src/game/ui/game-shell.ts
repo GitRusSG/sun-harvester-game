@@ -466,12 +466,56 @@ export class GameShell {
         <div class="gs-stat"><span class="gs-stat-label">Iron</span><span class="gs-stat-value">${formatNumber(state.materials.stockpiles.iron_ore ?? 0)}</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Steel</span><span class="gs-stat-value">${formatNumber(state.materials.stockpiles.steel ?? 0)}</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Military</span><span class="gs-stat-value">${formatNumber(state.weapons.militaryPower)}</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">Weapons Factories</span><span class="gs-stat-value">${state.weapons.factories.length} (-${state.weapons.factories.length * 5}⚡/s)</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Weapons Factories</span><span class="gs-stat-value">${state.weapons.factories.length} (-${state.weapons.factories.length * 12}⚡/s)</span></div>
       </div>
+      ${this.renderSpendingBreakdown(state)}
       <h3 class="gs-section-title">Era Progression</h3>
       ${eraInfo}
       ${this.renderOppositionInfo(state)}
     `;
+  }
+
+  /**
+   * Shows a breakdown of what's costing the player energy and currency each tick.
+   */
+  private renderSpendingBreakdown(state: GameState): string {
+    const items: { label: string; energy: number; currency: number }[] = [];
+
+    // Weapons factories drain energy.
+    const wf = state.weapons.factories.length;
+    if (wf > 0) items.push({ label: `🔫 Weapons Factories (×${wf})`, energy: wf * 12, currency: 0 });
+
+    // Power plants consume fuel (converted to effective cost).
+    const coalPlants = state.energy.powerPlants.filter(p => p.type === 'coal').length;
+    const nuclearPlants = state.energy.powerPlants.filter(p => p.type === 'nuclear').length;
+    if (coalPlants > 0) items.push({ label: `🏭 Coal Plants (×${coalPlants})`, energy: 0, currency: coalPlants * 5 });
+    if (nuclearPlants > 0) items.push({ label: `☢️ Nuclear Plants (×${nuclearPlants})`, energy: 0, currency: nuclearPlants * 15 });
+
+    // Mines have maintenance.
+    const mines = state.infrastructure.mines.length;
+    if (mines > 0) items.push({ label: `⛏️ Mines (×${mines})`, energy: 0, currency: mines * 3 });
+
+    // Distribution networks.
+    const dist = state.infrastructure.distributionNetworks.length;
+    if (dist > 0) items.push({ label: `🏗️ Distribution (×${dist})`, energy: 0, currency: dist * 2 });
+
+    // Controlled countries give tax income (not spending, shown as income).
+    const taxCountries = state.political.installedPoliticians.length;
+
+    if (items.length === 0 && taxCountries === 0) return '';
+
+    let html = `<h3 class="gs-section-title">💸 Spending Breakdown (per tick)</h3><div class="gs-stat-grid">`;
+    for (const item of items) {
+      const parts: string[] = [];
+      if (item.energy > 0) parts.push(`-${item.energy}⚡`);
+      if (item.currency > 0) parts.push(`-$${item.currency}`);
+      html += `<div class="gs-stat"><span class="gs-stat-label">${item.label}</span><span class="gs-stat-value gs-negative">${parts.join(' ')}</span></div>`;
+    }
+    if (taxCountries > 0) {
+      html += `<div class="gs-stat"><span class="gs-stat-label">💰 Tax Income (×${taxCountries} countries)</span><span class="gs-stat-value gs-positive">+income</span></div>`;
+    }
+    html += '</div>';
+    return html;
   }
 
   /**
@@ -488,9 +532,11 @@ export class GameShell {
     const sanctionPct = opp.activeSanctions.reduce((sum, s) => sum + s.severity, 0);
     const protestSlow = opp.activeProtests.reduce((sum, p) => sum + p.severity, 0);
 
-    const militaryVsUN = state.weapons.militaryPower >= opp.unPowerLevel
-      ? `<span class="gs-positive">You outgun the UN ✓</span>`
-      : `<span class="gs-negative">UN is stronger (need ${formatNumber(opp.unPowerLevel)} power)</span>`;
+    const militaryVsUN = opp.unPowerLevel <= 0
+      ? `<span class="gs-positive">🏆 UN Defeated — they will never attack again</span>`
+      : state.weapons.militaryPower >= opp.unPowerLevel
+        ? `<span class="gs-positive">You outgun the UN ✓</span>`
+        : `<span class="gs-negative">UN is stronger (need ${formatNumber(opp.unPowerLevel)} power)</span>`;
 
     let effects = '';
     if (sanctionPct > 0) {
@@ -652,6 +698,9 @@ export class GameShell {
         ${btn('⛏️ Coal Mine ($200)', { type: 'build_mine', payload: { materialType: 'coal', cost: 200, depositQuality: 0.5 } }, 200, 'Extracts coal over time — fuel for coal power plants.')}
         ${btn('⛏️ Iron Mine ($220)', { type: 'build_mine', payload: { materialType: 'iron_ore', cost: 220, depositQuality: 0.4 } }, 220, 'Extracts iron ore — refined into steel for building, weapons, and eras.')}
         ${btn('⛏️ Silicon Mine ($250)', { type: 'build_mine', payload: { materialType: 'silicon', cost: 250, depositQuality: 0.35 } }, 250, 'Extracts silicon — used to craft solar cells and electronics.')}
+        ${btn('⛏️ Copper Mine ($230)', { type: 'build_mine', payload: { materialType: 'copper', cost: 230, depositQuality: 0.4 } }, 230, 'Extracts copper — used for electronics and wiring.')}
+        ${btn('☢️ Uranium Mine ($400)', { type: 'build_mine', payload: { materialType: 'uranium', cost: 400, depositQuality: 0.3 } }, 400, 'Extracts uranium — fuel for nuclear power plants.')}
+        ${btn('🏗️ Steel Refinery ($350)', { type: 'build_mine', payload: { materialType: 'steel', cost: 350, depositQuality: 0.25 } }, 350, 'Produces steel from iron. Essential for era advancement and weapons.')}
         ${btn('🏭 Distribution Network ($500)', { type: 'build_distribution_network', payload: { cost: 500 } }, 500, 'Increases the rate stored energy converts into currency income.')}
       </div>
 

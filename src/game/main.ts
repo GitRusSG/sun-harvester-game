@@ -525,29 +525,44 @@ function boot(): void {
         loop.setState(currentState);
       }
 
-      // Morale dynamics — drifts based on living conditions, never fully static.
+      // Morale dynamics — drifts based on living conditions.
+      // BOOSTERS:
       let md = 0;
-      md += (currentState.opposition.publicApproval - 55) * 0.03;
-      md -= currentState.energy.powerPlants.filter(p => p.type === 'nuclear').length * 0.2;
-      md -= currentState.opposition.unHostility * 0.015;
-      md -= currentState.weapons.factories.length * 0.1; // war economy lowers morale
-      if (currentState.energy.stored < currentState.energy.maxStorage * 0.15) md -= 0.6;
-      if (currentState.resources.currency < 200) md -= 1.2;
-      if (currentState.resources.incomeRate > currentState.resources.expenseRate) md += 0.15;
-      md -= 0.05; // constant slight decay
+      md += (currentState.opposition.publicApproval - 45) * 0.025; // approval above 45 helps
+      if (currentState.resources.incomeRate > currentState.resources.expenseRate) md += 0.25; // profitable = happy
+      if (currentState.energy.stored > currentState.energy.maxStorage * 0.5) md += 0.1; // plenty of energy
+      if (currentState.resources.currency > 5000) md += 0.08; // financially secure
+      md += currentState.political.installedPoliticians.length * 0.05; // global power pride
+      // DRAINS:
+      md -= currentState.energy.powerPlants.filter(p => p.type === 'nuclear').length * 0.12;
+      md -= currentState.opposition.unHostility * 0.008;
+      md -= currentState.weapons.factories.length * 0.05;
+      if (currentState.energy.stored < currentState.energy.maxStorage * 0.1) md -= 0.3;
+      if (currentState.resources.currency < 100) md -= 0.6;
+      md -= 0.02; // very mild constant decay
       morale = Math.max(0, Math.min(100, morale + md));
       try { localStorage.setItem('shg_morale', morale.toFixed(1)); } catch { /* */ }
 
-      // Low morale penalty.
-      if (morale < 50 && currentState.resources.currency > 0) {
-        const pen = currentState.resources.currency * 0.003 * (1 - morale / 100);
+      // Low morale penalty — economy bleeds when people are unhappy.
+      if (morale < 40 && currentState.resources.currency > 0) {
+        const pen = currentState.resources.currency * 0.004 * (1 - morale / 100);
         currentState = applyUpdate(currentState, { resources: { currency: Math.max(0, currentState.resources.currency - pen) } });
         loop.setState(currentState);
       }
+      // Very low morale — buildings break (random infrastructure damage).
+      if (morale < 20 && Math.random() < 0.03) {
+        const mines = currentState.infrastructure.mines;
+        if (mines.length > 0) {
+          const broken = mines.slice(0, -1); // lose a mine
+          currentState = applyUpdate(currentState, { mutations: [{ path: 'infrastructure.mines', value: broken }] });
+          loop.setState(currentState);
+          shell.notify('💥 Low morale! A mine broke down.', 'error');
+        }
+      }
 
-      // High morale bonus — a happy populace boosts the economy (interdependency).
-      if (morale > 75 && currentState.resources.incomeRate > 0) {
-        const bonus = currentState.resources.incomeRate * 0.1 * ((morale - 75) / 25);
+      // High morale bonus — a happy populace boosts the economy.
+      if (morale > 70 && currentState.resources.incomeRate > 0) {
+        const bonus = currentState.resources.incomeRate * 0.15 * ((morale - 70) / 30);
         currentState = applyUpdate(currentState, { resources: { currency: currentState.resources.currency + bonus } });
         loop.setState(currentState);
       }

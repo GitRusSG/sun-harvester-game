@@ -100,8 +100,9 @@ export class OppositionSystem {
       });
     }
 
-    // Check for UN attack events
+    // Check for UN attack events (UN can't attack if their power is 0 — defeated)
     if (
+      state.opposition.unPowerLevel > 0 &&
       state.opposition.unHostility > UN_ATTACK_HOSTILITY_THRESHOLD &&
       state.statistics.playTimeTicks - state.opposition.lastUNAttackTick >= UN_ATTACK_COOLDOWN
     ) {
@@ -248,9 +249,10 @@ export class OppositionSystem {
       unHostility = Math.min(100, unHostility + territoryHostilityRate * deltaTicks);
     }
 
-    // --- UN attacks ---
+    // --- UN attacks (can't attack if power is 0 — permanently defeated) ---
     const currentTick = state.statistics.playTimeTicks;
     if (
+      unPowerLevel > 0 &&
       unHostility > UN_ATTACK_HOSTILITY_THRESHOLD &&
       currentTick - lastUNAttackTick >= UN_ATTACK_COOLDOWN
     ) {
