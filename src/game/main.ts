@@ -33,6 +33,8 @@ import {
   MAX_PROTEST_SUPPRESSION,
   INSTANT_BUILD_TICKS,
   INFINITE_QUEUE_SIZE,
+  TIMEWARP_COST,
+  TIMEWARP_SPEED,
 } from './data/commands.js';
 
 import { GameShell } from './ui/game-shell.js';
@@ -99,6 +101,8 @@ function boot(): void {
   let protestSuppressionLevel = 0;
   let autoMoraleEnabled = false;
   let autoMoraleThreshold = 50;
+  let timewarpUnlocked = false;
+  let timewarpActive = false;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
   try { const q = localStorage.getItem('shg_queue_max'); if (q) maxQueueSize = parseInt(q); } catch { /* */ }
   try { const s = localStorage.getItem('shg_build_speed'); if (s) buildSpeedMultiplier = parseFloat(s); } catch { /* */ }
@@ -107,6 +111,8 @@ function boot(): void {
   try { const p = localStorage.getItem('shg_protest_suppress'); if (p) protestSuppressionLevel = parseInt(p); } catch { /* */ }
   try { const a = localStorage.getItem('shg_auto_morale'); if (a) { autoMoraleEnabled = a === '1'; } } catch { /* */ }
   try { const t = localStorage.getItem('shg_auto_morale_threshold'); if (t) autoMoraleThreshold = parseInt(t); } catch { /* */ }
+  try { const tw = localStorage.getItem('shg_timewarp_unlocked'); if (tw) timewarpUnlocked = tw === '1'; } catch { /* */ }
+  try { const ta = localStorage.getItem('shg_timewarp_active'); if (ta) timewarpActive = ta === '1'; } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
 
@@ -328,6 +334,8 @@ function boot(): void {
       protestSuppressionLevel = 0;
       autoMoraleEnabled = false;
       autoMoraleThreshold = 50;
+      timewarpUnlocked = false;
+      timewarpActive = false;
       buildQueue.length = 0;
       shell.setBuildQueue(buildQueue);
       shell.setMorale(morale);
@@ -509,6 +517,18 @@ function boot(): void {
           try { localStorage.setItem('shg_auto_morale', autoMoraleEnabled ? '1' : '0'); } catch { /* */ }
           shell.notify(autoMoraleEnabled ? '🤖 Auto-morale ON (threshold: ' + autoMoraleThreshold + ')' : '🤖 Auto-morale OFF', 'info');
           break;
+        case 'timewarp_buy':
+          if (timewarpUnlocked) { shell.notify('Already unlocked! Use the toggle.', 'warning'); break; }
+          timewarpUnlocked = true;
+          try { localStorage.setItem('shg_timewarp_unlocked', '1'); } catch { /* */ }
+          shell.notify('⏩ Time Warp unlocked! Toggle it in Upgrades.', 'success');
+          break;
+        case 'timewarp_toggle':
+          if (!timewarpUnlocked) { shell.notify('Unlock Time Warp first!', 'error'); break; }
+          timewarpActive = !timewarpActive;
+          try { localStorage.setItem('shg_timewarp_active', timewarpActive ? '1' : '0'); } catch { /* */ }
+          shell.notify(timewarpActive ? '⏩ Time Warp ACTIVE! (×' + TIMEWARP_SPEED + ' speed)' : '⏸️ Time Warp OFF', 'info');
+          break;
       }
       gameLoop.setState(upd);
       shell.render(gameLoop.getState());
@@ -590,6 +610,14 @@ function boot(): void {
     // build queue, and quizzes keep advancing even when no menu is open or
     // the tab is backgrounded (requestAnimationFrame throttles; setInterval does not).
     function simulationStep(): void {
+      const ticks = timewarpActive ? TIMEWARP_SPEED : 1;
+      for (let _t = 0; _t < ticks; _t++) {
+        simulationTick();
+      }
+      shell.render(loop.getState());
+    }
+
+    function simulationTick(): void {
       let currentState = loop.getState();
 
       // Process build queue.
@@ -696,7 +724,6 @@ function boot(): void {
       }
 
       shell.setMorale(morale);
-      shell.render(loop.getState());
     }
 
     // Drive the simulation step every second, independent of the render loop.

@@ -21,13 +21,13 @@ export const MAX_BUILD_SPEED = 5.0;
 
 // ─── Upgrade Caps ────────────────────────────────────────────────────────────
 // Max knowledge speed multiplier.
-export const MAX_KNOWLEDGE_SPEED = 10.0;
+export const MAX_KNOWLEDGE_SPEED = 100000.0;
 
 // Max research speed multiplier.
-export const MAX_RESEARCH_SPEED = 10.0;
+export const MAX_RESEARCH_SPEED = 1000.0;
 
 // Max protest suppression level.
-export const MAX_PROTEST_SUPPRESSION = 10;
+export const MAX_PROTEST_SUPPRESSION = 100;
 
 // ─── Instant Build (applies when infinite unlocked) ──────────────────────────
 // Build time in ticks when infinite mode is active. 1 = completes next tick.
@@ -35,6 +35,14 @@ export const INSTANT_BUILD_TICKS = 1;
 
 // Queue size when infinite mode is active. Infinity means no limit.
 export const INFINITE_QUEUE_SIZE = 999;
+
+// ─── Time Warp ───────────────────────────────────────────────────────────────
+// Cost to purchase the time warp ability (one-time unlock, then togglable).
+export const TIMEWARP_COST = 500000;
+
+// How many simulation ticks run per real second when time warp is active.
+// Normal = 1 tick/sec. Timewarp = TIMEWARP_SPEED ticks/sec.
+export const TIMEWARP_SPEED = 5;
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 

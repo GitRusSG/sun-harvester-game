@@ -668,6 +668,12 @@ export class GameShell {
         ${btn('🤖 Auto-Morale Toggle — $3000', { type: 'upgrade_buy', payload: { kind: 'auto_morale_toggle', cost: 3000 } }, 3000, 'Toggle automatic morale maintenance. Spends $200/sec when morale drops below 50.')}
       </div>
 
+      <h3 class="gs-section-title">⏩ Time Warp</h3>
+      <div class="gs-action-list">
+        ${btn('⏩ Unlock Time Warp — $500,000', { type: 'upgrade_buy', payload: { kind: 'timewarp_buy', cost: 500000 } }, 500000, 'One-time purchase. Unlocks the ability to run the simulation at 5× speed.')}
+        ${btn('⏩ Toggle Time Warp', { type: 'upgrade_buy', payload: { kind: 'timewarp_toggle', cost: 0 } }, 0, 'Turn time warp on/off. When active, everything runs 5× faster.')}
+      </div>
+
       <h3 class="gs-section-title">🎉 Morale</h3>
       <div class="gs-action-list">
         ${btn(`🎉 Public Festival (+20 morale) — $${formatNumber(festivalCost)}`, { type: 'morale_festival', payload: { cost: festivalCost } }, festivalCost, 'Throw a national festival for an instant +20 morale boost.')}
