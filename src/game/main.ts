@@ -50,18 +50,6 @@ function showCrashScreen(message: string): void {
 window.addEventListener('error', (e) => showCrashScreen(e.message ?? 'Unknown error'));
 window.addEventListener('unhandledrejection', (e) => showCrashScreen(String(e.reason ?? 'Unknown error')));
 
-// ─── Force Reset (bump this number to wipe all players' saves on next load) ─
-const RESET_VERSION = 2;
-const RESET_KEY = 'shg_reset_version';
-try {
-  const prev = parseInt(localStorage.getItem(RESET_KEY) ?? '0');
-  if (prev < RESET_VERSION) {
-    localStorage.clear();
-    localStorage.setItem(RESET_KEY, String(RESET_VERSION));
-    console.info(`[SunHarvester] Save reset (v${RESET_VERSION}). Fresh start.`);
-  }
-} catch { /* storage unavailable — continue fresh */ }
-
 // ─── Main Game Init (wrapped in try/catch) ──────────────────────────────────
 
 try {
