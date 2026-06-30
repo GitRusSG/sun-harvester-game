@@ -24,6 +24,16 @@ import { MarsSystem } from './systems/mars-system.js';
 import { DysonSystem } from './systems/dyson-system.js';
 import { EducationSystem } from './systems/education-system.js';
 import { IMMUNE_COUNTRIES } from './data/countries.js';
+import {
+  isInfiniteUnlocked,
+  MAX_QUEUE_SIZE,
+  MAX_BUILD_SPEED,
+  MAX_KNOWLEDGE_SPEED,
+  MAX_RESEARCH_SPEED,
+  MAX_PROTEST_SUPPRESSION,
+  INSTANT_BUILD_TICKS,
+  INFINITE_QUEUE_SIZE,
+} from './data/commands.js';
 
 import { GameShell } from './ui/game-shell.js';
 
@@ -465,27 +475,32 @@ function boot(): void {
           shell.notify('📚 +500 knowledge points', 'success');
           break;
         case 'queue_size':
-          maxQueueSize += 2;
+          if (maxQueueSize >= MAX_QUEUE_SIZE) { shell.notify('Queue size maxed out!', 'warning'); break; }
+          maxQueueSize = Math.min(MAX_QUEUE_SIZE, maxQueueSize + 2);
           try { localStorage.setItem('shg_queue_max', String(maxQueueSize)); } catch { /* */ }
           shell.notify(`📦 Queue expanded! Now holds ${maxQueueSize}`, 'success');
           break;
         case 'build_speed':
-          buildSpeedMultiplier += 0.25;
+          if (buildSpeedMultiplier >= MAX_BUILD_SPEED) { shell.notify('Build speed maxed out!', 'warning'); break; }
+          buildSpeedMultiplier = Math.min(MAX_BUILD_SPEED, buildSpeedMultiplier + 0.25);
           try { localStorage.setItem('shg_build_speed', buildSpeedMultiplier.toFixed(2)); } catch { /* */ }
           shell.notify(`⚡ Build speed ×${buildSpeedMultiplier.toFixed(2)}!`, 'success');
           break;
         case 'knowledge_speed':
-          knowledgeSpeedMultiplier += 0.5;
+          if (knowledgeSpeedMultiplier >= MAX_KNOWLEDGE_SPEED) { shell.notify('Knowledge speed maxed out!', 'warning'); break; }
+          knowledgeSpeedMultiplier = Math.min(MAX_KNOWLEDGE_SPEED, knowledgeSpeedMultiplier + 0.5);
           try { localStorage.setItem('shg_knowledge_speed', knowledgeSpeedMultiplier.toFixed(2)); } catch { /* */ }
           shell.notify(`🧠 Knowledge speed ×${knowledgeSpeedMultiplier.toFixed(1)}!`, 'success');
           break;
         case 'research_speed':
-          researchSpeedMultiplier += 0.5;
+          if (researchSpeedMultiplier >= MAX_RESEARCH_SPEED) { shell.notify('Research speed maxed out!', 'warning'); break; }
+          researchSpeedMultiplier = Math.min(MAX_RESEARCH_SPEED, researchSpeedMultiplier + 0.5);
           try { localStorage.setItem('shg_research_speed', researchSpeedMultiplier.toFixed(2)); } catch { /* */ }
           shell.notify(`🔬 Research speed ×${researchSpeedMultiplier.toFixed(1)}!`, 'success');
           break;
         case 'protest_suppress':
-          protestSuppressionLevel += 1;
+          if (protestSuppressionLevel >= MAX_PROTEST_SUPPRESSION) { shell.notify('Protest suppression maxed out!', 'warning'); break; }
+          protestSuppressionLevel = Math.min(MAX_PROTEST_SUPPRESSION, protestSuppressionLevel + 1);
           try { localStorage.setItem('shg_protest_suppress', String(protestSuppressionLevel)); } catch { /* */ }
           shell.notify(`🛡️ Protest suppression level ${protestSuppressionLevel}! UN hostility reduced.`, 'success');
           break;
@@ -522,9 +537,11 @@ function boot(): void {
       const state = gameLoop.getState();
       const cost = (action.payload.cost as number) ?? 0;
       if (cost > 0 && state.resources.currency < cost) { shell.notify('Not enough currency!', 'error'); return; }
-      if (buildQueue.length >= maxQueueSize) { shell.notify(`Queue full (max ${maxQueueSize})`, 'warning'); return; }
+      const infinite = isInfiniteUnlocked(state.currentEra);
+      const effectiveQueueMax = infinite ? INFINITE_QUEUE_SIZE : maxQueueSize;
+      if (buildQueue.length >= effectiveQueueMax) { shell.notify(`Queue full (max ${effectiveQueueMax})`, 'warning'); return; }
       if (cost > 0) gameLoop.setState(applyUpdate(state, { resources: { currency: state.resources.currency - cost } }));
-      const buildTime = Math.max(1, Math.round(BUILD_TIMES[action.type] / buildSpeedMultiplier));
+      const buildTime = infinite ? INSTANT_BUILD_TICKS : Math.max(1, Math.round(BUILD_TIMES[action.type] / buildSpeedMultiplier));
       buildQueue.push({ action, label: getBuildLabel(action.type), ticksRemaining: buildTime, totalTicks: buildTime });
       shell.notify(`Building ${getBuildLabel(action.type)} (${buildTime}s)`, 'info');
       shell.setBuildQueue(buildQueue);
