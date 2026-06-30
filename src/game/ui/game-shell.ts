@@ -612,6 +612,7 @@ export class GameShell {
       <div class="gs-action-list">
         ${btn('📦 Queue Expansion (+2 slots) — $5000', { type: 'upgrade_buy', payload: { kind: 'queue_size', cost: 5000 } }, 5000, 'Adds 2 more build queue slots.')}
         ${btn('⚡ Construction Speed (+25%) — $8000', { type: 'upgrade_buy', payload: { kind: 'build_speed', cost: 8000 } }, 8000, 'All future builds complete 25% faster (stacks).')}
+        ${btn('🧠 Knowledge Speed (+50%) — $6000', { type: 'upgrade_buy', payload: { kind: 'knowledge_speed', cost: 6000 } }, 6000, 'Labs produce knowledge 50% faster (stacks). Speeds up era advancement.')}
       </div>
 
       <h3 class="gs-section-title">🎉 Morale</h3>
@@ -688,7 +689,7 @@ export class GameShell {
     if (has('nuclear')) {
       html += `<h3 class="gs-section-title">☢️ Nuclear Era</h3><div class="gs-action-list">
         ${btn('☢️ Nuclear Power Plant ($1200)', { type: 'build_power_plant', payload: { type: 'nuclear', cost: 1200 } }, 1200, 'Massive energy from uranium. Lowers morale via anti-nuclear protests.')}
-        ${btn('🚀 Missile Battery ($800, +15 power)', { type: 'build_weapons_factory', payload: { producing: 'missile', cost: 800 } }, 800, 'High-power missile systems. Strong UN deterrent.')}
+        ${btn('🚀 Missile Battery ($800, +15 power)', { type: 'build_military_unit', payload: { producing: 'missile', cost: 800 } }, 800, 'High-power missile systems. Strong UN deterrent.')}
       </div>`;
     }
     if (has('solar')) {
@@ -699,17 +700,17 @@ export class GameShell {
     }
     if (has('orbital')) {
       html += `<h3 class="gs-section-title">🛰️ Orbital Era</h3><div class="gs-action-list">
-        ${btn('💻 Cyber Warfare Lab ($2500, +10 power)', { type: 'build_weapons_factory', payload: { producing: 'cyber', cost: 2500 } }, 2500, 'Cyber weapons disrupt enemy defenses.')}
+        ${btn('💻 Cyber Warfare Lab ($2500, +10 power)', { type: 'build_military_unit', payload: { producing: 'cyber', cost: 2500 } }, 2500, 'Cyber weapons disrupt enemy defenses.')}
       </div>`;
     }
     if (has('mars_colonization')) {
       html += `<h3 class="gs-section-title">🔴 Mars Era</h3><div class="gs-action-list">
-        ${btn('⚡ Energy Weapon Array ($6000, +25 power)', { type: 'build_weapons_factory', payload: { producing: 'energy', cost: 6000 } }, 6000, 'Directed-energy weapons — very high military power.')}
+        ${btn('⚡ Energy Weapon Array ($6000, +25 power)', { type: 'build_military_unit', payload: { producing: 'energy', cost: 6000 } }, 6000, 'Directed-energy weapons — very high military power.')}
       </div>`;
     }
     if (has('space_mining')) {
       html += `<h3 class="gs-section-title">☄️ Space Mining Era</h3><div class="gs-action-list">
-        ${btn('🛰️ Orbital Weapon ($12000, +40 power)', { type: 'build_weapons_factory', payload: { producing: 'orbital', cost: 12000 } }, 12000, 'Orbital strike platform — the strongest weapon system.')}
+        ${btn('🛰️ Orbital Weapon ($12000, +40 power)', { type: 'build_military_unit', payload: { producing: 'orbital', cost: 12000 } }, 12000, 'Orbital strike platform — the strongest weapon system.')}
       </div>`;
     }
     return html;

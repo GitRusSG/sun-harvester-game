@@ -83,9 +83,11 @@ function boot(): void {
   let quizTickCounter = 0;
   let maxQueueSize = 6;
   let buildSpeedMultiplier = 1.0;
+  let knowledgeSpeedMultiplier = 1.0;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
   try { const q = localStorage.getItem('shg_queue_max'); if (q) maxQueueSize = parseInt(q); } catch { /* */ }
   try { const s = localStorage.getItem('shg_build_speed'); if (s) buildSpeedMultiplier = parseFloat(s); } catch { /* */ }
+  try { const k = localStorage.getItem('shg_knowledge_speed'); if (k) knowledgeSpeedMultiplier = parseFloat(k); } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
 
@@ -104,6 +106,7 @@ function boot(): void {
     build_mine: 25,
     build_distribution_network: 45,
     build_weapons_factory: 40,
+    build_military_unit: 25,
     build_lab: 35,
     build_orbital_platform: 75,
     upgrade_storage: 20,
@@ -113,7 +116,8 @@ function boot(): void {
     const labels: Record<string, string> = {
       build_power_plant: 'Power Plant', build_solar_panel: 'Solar Panel',
       build_mine: 'Mine', build_distribution_network: 'Distribution',
-      build_weapons_factory: 'Weapons Factory', build_lab: 'Lab',
+      build_weapons_factory: 'Weapons Factory', build_military_unit: 'Military Unit',
+      build_lab: 'Lab',
       build_orbital_platform: 'Orbital Platform', upgrade_storage: 'Storage',
     };
     return labels[type] ?? type;
@@ -173,6 +177,18 @@ function boot(): void {
     if (order.action.type === 'upgrade_storage') {
       const amount = (order.action.payload.amount as number) ?? 200;
       loop.setState(applyUpdate(state, { mutations: [{ path: 'energy.maxStorage', value: state.energy.maxStorage + amount }] }));
+      return;
+    }
+    // Military units (era-gated) just grant a flat power bonus — no factory.
+    if (order.action.type === 'build_military_unit') {
+      const producing = (order.action.payload.producing as string) ?? 'conventional';
+      const UNIT_POWER: Record<string, number> = {
+        missile: 15, cyber: 10, energy: 25, orbital: 40,
+      };
+      const bonus = UNIT_POWER[producing] ?? 5;
+      loop.setState(applyUpdate(state, {
+        mutations: [{ path: 'weapons.militaryPower', value: state.weapons.militaryPower + bonus }],
+      }));
       return;
     }
     // Era-gated weapon tiers grant a flat power bonus directly (era is the gate,
@@ -264,6 +280,7 @@ function boot(): void {
       morale = 100;
       maxQueueSize = 6;
       buildSpeedMultiplier = 1.0;
+      knowledgeSpeedMultiplier = 1.0;
       buildQueue.length = 0;
       shell.setBuildQueue(buildQueue);
       shell.setMorale(morale);
@@ -379,6 +396,11 @@ function boot(): void {
           try { localStorage.setItem('shg_build_speed', buildSpeedMultiplier.toFixed(2)); } catch { /* */ }
           shell.notify(`⚡ Build speed ×${buildSpeedMultiplier.toFixed(2)}!`, 'success');
           break;
+        case 'knowledge_speed':
+          knowledgeSpeedMultiplier += 0.5;
+          try { localStorage.setItem('shg_knowledge_speed', knowledgeSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          shell.notify(`🧠 Knowledge speed ×${knowledgeSpeedMultiplier.toFixed(1)}!`, 'success');
+          break;
       }
       gameLoop.setState(upd);
       shell.render(gameLoop.getState());
@@ -472,11 +494,11 @@ function boot(): void {
         shell.setBuildQueue(buildQueue);
       }
 
-      // Labs produce knowledge (scaled by morale).
+      // Labs produce knowledge (scaled by morale and knowledge speed upgrades).
       const labs = currentState.statistics.totalResearchCompleted;
       if (labs > 0) {
         const moraleMultiplier = 0.4 + (morale / 100) * 0.6;
-        currentState = applyUpdate(currentState, { resources: { knowledgePoints: currentState.resources.knowledgePoints + labs * 2 * moraleMultiplier } });
+        currentState = applyUpdate(currentState, { resources: { knowledgePoints: currentState.resources.knowledgePoints + labs * 2 * moraleMultiplier * knowledgeSpeedMultiplier } });
         loop.setState(currentState);
       }
 
