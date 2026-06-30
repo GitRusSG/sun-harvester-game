@@ -384,11 +384,58 @@ function handleAdvanceEra(loop: GameLoop): void {
 
 // ─── Launch ─────────────────────────────────────────────────────────────────
 
-const saved = SaveSystem.load();
-if (saved) {
-  startGame(saved.country);
-} else {
-  shell.showCountrySelection((country) => {
-    startGame(country);
+// Global error handler: if anything crashes, show a recovery screen instead
+// of a blank page (common cause: incompatible old save in localStorage).
+function showCrashScreen(message: string): void {
+  container.innerHTML = `
+    <div style="position:fixed;inset:0;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:16px;background:#0f172a;
+      color:#f8fafc;font-family:system-ui,sans-serif;padding:24px;text-align:center;">
+      <h1 style="margin:0;font-size:24px;">⚠️ Something went wrong</h1>
+      <p style="color:#cbd5e1;max-width:480px;">${message}</p>
+      <p style="color:#94a3b8;font-size:13px;">This is often caused by an old save from a previous version.</p>
+      <button id="crash-reset" style="background:#fbbf24;color:#0f172a;border:none;
+        padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">
+        🔄 Reset & Restart
+      </button>
+    </div>
+  `;
+  const btn = document.getElementById('crash-reset');
+  btn?.addEventListener('click', () => {
+    try { localStorage.clear(); } catch { /* ignore */ }
+    window.location.reload();
   });
+}
+
+window.addEventListener('error', (e) => {
+  showCrashScreen(String(e.message ?? 'Unknown error'));
+});
+window.addEventListener('unhandledrejection', (e) => {
+  showCrashScreen(String(e.reason ?? 'Unknown error'));
+});
+
+try {
+  // Validate saved game; if it's malformed, discard it and start fresh.
+  let saved: GameState | null = null;
+  try {
+    saved = SaveSystem.load();
+    // Sanity check: ensure all critical fields exist (guards old saves).
+    if (saved && (!saved.alien || !saved.weapons || !saved.energy || !saved.resources || !saved.country)) {
+      console.warn('[main] Saved game missing fields, discarding.');
+      saved = null;
+    }
+  } catch (err) {
+    console.warn('[main] Failed to load save, starting fresh:', err);
+    saved = null;
+  }
+
+  if (saved) {
+    startGame(saved.country);
+  } else {
+    shell.showCountrySelection((country) => {
+      startGame(country);
+    });
+  }
+} catch (err) {
+  showCrashScreen(err instanceof Error ? err.message : String(err));
 }
