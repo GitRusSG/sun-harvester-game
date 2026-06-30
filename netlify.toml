@@ -1,0 +1,16 @@
+# Netlify deployment configuration for Sun Harvester.
+# Netlify serves from the root domain, so we build with DEPLOY_TARGET=root
+# to make Vite emit root-relative asset paths (base "/").
+
+[build]
+  command = "DEPLOY_TARGET=root npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# SPA-style fallback: serve index.html for any unmatched route.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

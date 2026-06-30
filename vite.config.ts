@@ -2,9 +2,14 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ command }) => ({
-  // GitHub Pages deploys under /<repo-name>/ path, but the dev server
-  // serves from root so localhost:5173/ works directly.
-  base: command === 'build' ? '/sun-harvester-game/' : '/',
+  // Base path:
+  // - Netlify/Vercel/Cloudflare serve from root → set DEPLOY_TARGET=root (or use Netlify's default)
+  // - GitHub Pages serves under /<repo-name>/
+  // - Dev server always serves from root
+  base:
+    command === 'build' && process.env.DEPLOY_TARGET !== 'root'
+      ? '/sun-harvester-game/'
+      : '/',
   test: {
     include: ['tests/**/*.test.ts', 'tests/**/*.property.test.ts'],
   },
