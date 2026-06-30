@@ -963,13 +963,43 @@ export class GameShell {
     this.panelContent.innerHTML = html;
   }
 
-  private renderSettingsPanel(_state: GameState): void {
+  private renderSettingsPanel(state: GameState): void {
     this.panelTitle.textContent = '⚙️ Settings';
+
+    const russiaCheat = state.country === 'russia' ? `
+      <h3 class="gs-section-title">🇷🇺 Russia Dev Console</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="russia-cheat-resource" class="gs-action-btn" style="padding:6px 10px;min-width:140px;">
+          <option value="currency">Currency</option>
+          <option value="coal">Coal</option>
+          <option value="iron_ore">Iron Ore</option>
+          <option value="steel">Steel</option>
+          <option value="silicon">Silicon</option>
+          <option value="copper">Copper</option>
+          <option value="electronics">Electronics</option>
+          <option value="uranium">Uranium</option>
+          <option value="fuel">Fuel</option>
+          <option value="fuel_rods">Fuel Rods</option>
+          <option value="rare_earth">Rare Earth</option>
+          <option value="advanced_circuits">Adv. Circuits</option>
+          <option value="solar_cells">Solar Cells</option>
+          <option value="regolith_iron">Regolith Iron</option>
+          <option value="martian_ice">Martian Ice</option>
+          <option value="co2">CO2</option>
+          <option value="energy">Energy</option>
+          <option value="knowledge">Knowledge</option>
+          <option value="military">Military Power</option>
+        </select>
+        <button class="gs-action-btn" data-action='${JSON.stringify({ type: 'russia_cheat', payload: {} })}'>💰 Grant 9B</button>
+      </div>
+    ` : '';
+
     this.panelContent.innerHTML = `
       <div class="gs-action-list">
         <button class="gs-action-btn gs-danger" data-action='${JSON.stringify({ type: 'restart_game', payload: {} })}'>🔄 Restart Game (pick new country)</button>
         <button class="gs-action-btn" onclick="document.dispatchEvent(new CustomEvent('shg-export'))">💾 Export Save</button>
       </div>
+      ${russiaCheat}
       <h3 class="gs-section-title">Credits</h3>
       <p class="gs-muted">World map: "Simple World Map" by Al MacDonald, editor Fritz Lekschas. Licensed <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" style="color:#93c5fd">CC BY-SA 3.0</a>.</p>
     `;

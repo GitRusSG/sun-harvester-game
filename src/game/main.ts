@@ -271,7 +271,7 @@ function boot(): void {
     }
 
     for (const system of gameSystems) {
-      if (system.canPerform(state, { type: order.action.type, payload })) {
+      if (system.canPerform(state, { type: order.action.type, payload }) || order.action.type.startsWith('build_')) {
         const update = system.perform(state, { type: order.action.type, payload });
         if (update) {
           loop.setState(applyUpdate(state, update));
@@ -423,6 +423,32 @@ function boot(): void {
       });
       gameLoop.setState(updated);
       shell.notify('🔫 Produced rifles! +1 military power', 'success');
+      shell.render(gameLoop.getState());
+      return;
+    }
+
+    // ─── Russia Cheat (9B grant from dropdown) ──────────────────────────
+    if (action.type === 'russia_cheat') {
+      const state = gameLoop.getState();
+      if (state.country !== 'russia') return;
+      const select = document.querySelector<HTMLSelectElement>('#russia-cheat-resource');
+      const resource = select?.value ?? 'currency';
+      const AMOUNT = 9_000_000_000;
+      let updated = state;
+      if (resource === 'currency') {
+        updated = applyUpdate(state, { resources: { currency: state.resources.currency + AMOUNT } });
+      } else if (resource === 'energy') {
+        updated = applyUpdate(state, { mutations: [{ path: 'energy.stored', value: state.energy.stored + AMOUNT }] });
+      } else if (resource === 'knowledge') {
+        updated = applyUpdate(state, { resources: { knowledgePoints: state.resources.knowledgePoints + AMOUNT } });
+      } else if (resource === 'military') {
+        updated = applyUpdate(state, { mutations: [{ path: 'weapons.militaryPower', value: state.weapons.militaryPower + AMOUNT }] });
+      } else {
+        const newStockpiles = { ...state.materials.stockpiles, [resource]: (state.materials.stockpiles[resource as keyof typeof state.materials.stockpiles] ?? 0) + AMOUNT };
+        updated = applyUpdate(state, { materials: { stockpiles: newStockpiles } });
+      }
+      gameLoop.setState(updated);
+      shell.notify(`🇷🇺 Granted 9B ${resource.replace('_', ' ')}!`, 'success');
       shell.render(gameLoop.getState());
       return;
     }
