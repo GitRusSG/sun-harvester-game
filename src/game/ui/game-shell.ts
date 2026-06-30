@@ -15,6 +15,7 @@ import { formatNumber } from '../utils/format.js';
 import { ERA_ORDER } from '../core/state-manager.js';
 import { SolarScene } from './three/solar-scene.js';
 import { CelestialNavigator, CELESTIAL_BODIES, isBodyUnlocked } from './celestial-nav.js';
+import { WorldMap } from './world-map.js';
 import { COUNTRY_PROFILES, getAllCountryIds } from '../data/countries.js';
 import { getTreeNodes } from '../data/tech-trees.js';
 import { RECIPES } from '../data/recipes.js';
@@ -31,6 +32,7 @@ export class GameShell {
   private container: HTMLElement;
   private solarScene: SolarScene | null = null;
   private navigator: CelestialNavigator;
+  private worldMap: WorldMap;
   private onAction: ActionHandler = () => {};
   private state: GameState | null = null;
 
@@ -52,6 +54,10 @@ export class GameShell {
   constructor(container: HTMLElement) {
     this.container = container;
     this.navigator = new CelestialNavigator();
+    this.worldMap = new WorldMap();
+    this.worldMap.setCountryClickHandler((country) => {
+      this.openPanel(`country_${country}`);
+    });
     this.build();
   }
 
@@ -399,23 +405,24 @@ export class GameShell {
       `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${currency < cost ? 'disabled' : ''}>${label}</button>`;
 
     // Calculate labs and storage upgrade costs.
-    const storageCost = 300 + state.energy.maxStorage * 0.5;
-    const labCost = 250;
+    const storageCost = 500 + state.energy.maxStorage * 0.8;
+    const labCost = 500 + state.statistics.totalResearchCompleted * 150;
+    const weaponsCost = 400 + state.weapons.factories.length * 200;
 
     this.panelContent.innerHTML = `
       <h3 class="gs-section-title">Power & Energy</h3>
       <div class="gs-action-list">
-        ${btn('⚡ Coal Power Plant ($150)', { type: 'build_power_plant', payload: { type: 'coal', cost: 150 } }, 150)}
-        ${btn('☀️ Solar Panel ($100)', { type: 'build_solar_panel', payload: { locationId: 'arizona', cost: 100 } }, 100)}
+        ${btn('⚡ Coal Power Plant ($350)', { type: 'build_power_plant', payload: { type: 'coal', cost: 350 } }, 350)}
+        ${btn('☀️ Solar Panel ($250)', { type: 'build_solar_panel', payload: { locationId: 'arizona', cost: 250 } }, 250)}
         ${btn(`🔋 Upgrade Storage ($${Math.floor(storageCost)}) [+200 cap]`, { type: 'upgrade_storage', payload: { cost: Math.floor(storageCost) } }, storageCost)}
       </div>
 
       <h3 class="gs-section-title">Mining & Industry</h3>
       <div class="gs-action-list">
-        ${btn('⛏️ Coal Mine ($80)', { type: 'build_mine', payload: { materialType: 'coal', cost: 80, depositQuality: 0.7 } }, 80)}
-        ${btn('⛏️ Iron Mine ($80)', { type: 'build_mine', payload: { materialType: 'iron_ore', cost: 80, depositQuality: 0.6 } }, 80)}
-        ${btn('⛏️ Silicon Mine ($90)', { type: 'build_mine', payload: { materialType: 'silicon', cost: 90, depositQuality: 0.5 } }, 90)}
-        ${btn('🏭 Distribution Network ($200)', { type: 'build_distribution_network', payload: { cost: 200 } }, 200)}
+        ${btn('⛏️ Coal Mine ($200)', { type: 'build_mine', payload: { materialType: 'coal', cost: 200, depositQuality: 0.5 } }, 200)}
+        ${btn('⛏️ Iron Mine ($220)', { type: 'build_mine', payload: { materialType: 'iron_ore', cost: 220, depositQuality: 0.4 } }, 220)}
+        ${btn('⛏️ Silicon Mine ($250)', { type: 'build_mine', payload: { materialType: 'silicon', cost: 250, depositQuality: 0.35 } }, 250)}
+        ${btn('🏭 Distribution Network ($500)', { type: 'build_distribution_network', payload: { cost: 500 } }, 500)}
       </div>
 
       <h3 class="gs-section-title">Research & Military</h3>
@@ -426,7 +433,7 @@ export class GameShell {
 
       <h3 class="gs-section-title">Space (requires orbital era)</h3>
       <div class="gs-action-list">
-        ${btn('🛰️ Orbital Platform (10 fuel + 20 steel)', { type: 'build_orbital_platform', payload: { type: 'solar_collector', output: 15 } }, 0)}
+        ${btn('🛰️ Orbital Platform ($2000 + 10 fuel + 20 steel)', { type: 'build_orbital_platform', payload: { type: 'solar_collector', output: 15, cost: 2000 } }, 2000)}
       </div>
 
       <h3 class="gs-section-title">Placement Grid</h3>
@@ -565,6 +572,8 @@ export class GameShell {
         <button class="gs-action-btn gs-danger" onclick="try{localStorage.clear()}catch(e){} window.location.reload();">🔄 Restart Game</button>
         <button class="gs-action-btn" onclick="document.dispatchEvent(new CustomEvent('shg-export'))">💾 Export Save</button>
       </div>
+      <h3 class="gs-section-title">Credits</h3>
+      <p class="gs-muted">World map: "Simple World Map" by Al MacDonald, editor Fritz Lekschas. Licensed <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" style="color:#93c5fd">CC BY-SA 3.0</a>.</p>
     `;
   }
 
@@ -574,25 +583,6 @@ export class GameShell {
       `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}</button>`;
 
     const playerCountry = state.country;
-    const controlled = new Set(state.political.installedPoliticians);
-    const allCountries = ['usa', 'china', 'russia', 'india', 'germany', 'japan', 'uk', 'france', 'south_korea', 'brazil'] as const;
-
-    // Map display.
-    let mapHtml = '<div class="gs-world-map">';
-    for (const c of allCountries) {
-      const isPlayer = c === playerCountry;
-      const isControlled = controlled.has(c);
-      const influence = state.political.influence[c] ?? 0;
-      let colorClass = 'gs-map-red'; // UN controlled (default)
-      if (isPlayer) colorClass = 'gs-map-green';
-      else if (isControlled) colorClass = 'gs-map-green';
-      else if (influence > 30) colorClass = 'gs-map-yellow';
-
-      const name = COUNTRY_PROFILES[c]?.name ?? c;
-      const tag = isPlayer ? '(YOU)' : isControlled ? '(YOURS)' : `${influence.toFixed(0)}%`;
-      mapHtml += `<button class="gs-map-country ${colorClass}" data-open="country_${c}">${name}<br><small>${tag}</small></button>`;
-    }
-    mapHtml += '</div>';
 
     // Your country facilities.
     const labCount = state.statistics.totalResearchCompleted;
@@ -632,11 +622,15 @@ export class GameShell {
 
     this.panelContent.innerHTML = `
       <h3 class="gs-section-title">World Map</h3>
-      <p class="gs-muted">🟢 You/Controlled | 🟡 Influenced | 🔴 UN territory. Click a country to interact.</p>
-      ${mapHtml}
+      <p class="gs-muted">🟢 You | 🔵 Controlled | 🟡 Influenced | 🔴 Hostile. Click a country to interact.</p>
+      <div class="gs-svgmap-host" id="gs-worldmap-host"></div>
       ${facilitiesHtml}
       ${militaryHtml}
     `;
+
+    // Mount the interactive SVG map into its host container (after innerHTML set).
+    const mapHost = this.panelContent.querySelector<HTMLElement>('#gs-worldmap-host');
+    if (mapHost) this.worldMap.mount(mapHost, state);
   }
 
   /** Panel for interacting with a specific foreign country. */
@@ -644,23 +638,47 @@ export class GameShell {
     const id = countryId.replace('country_', '') as CountryId;
     const profile = COUNTRY_PROFILES[id];
     if (!profile || id === state.country) {
-      this.panelTitle.textContent = '🌍 Your Country';
-      this.panelContent.innerHTML = '<p class="gs-info">This is your home country. Use the Build panel to develop it.</p>';
+      // Player's home country → open Build panel
+      this.renderBuild(state);
       return;
     }
 
     const influence = state.political.influence[id] ?? 0;
     const isControlled = state.political.installedPoliticians.includes(id);
+
+    if (isControlled) {
+      // Controlled country → open Build panel (same grid, more building slots)
+      this.panelTitle.textContent = `🏗️ ${profile.name} (Controlled)`;
+      this.panelContent.innerHTML = `
+        <p class="gs-positive">✓ This country is under your control. Build infrastructure here.</p>
+        ${this.renderPlacementGrid(state)}
+        <p class="gs-muted">Use the Build panel to add structures to your territories.</p>
+      `;
+      return;
+    }
+
     const btn = (label: string, action: ActionPayload, disabled = false) =>
       `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}</button>`;
+
+    const garrison = profile.startingMilitary ?? 10;
+    const canAttack = !isControlled && state.weapons.militaryPower >= 10;
 
     this.panelTitle.textContent = `🎯 ${profile.name}`;
     this.panelContent.innerHTML = `
       <div class="gs-stat-grid">
         <div class="gs-stat"><span class="gs-stat-label">Influence</span><span class="gs-stat-value">${influence.toFixed(1)}%</span></div>
         <div class="gs-stat"><span class="gs-stat-label">Status</span><span class="gs-stat-value">${isControlled ? '🟢 Controlled' : influence >= 75 ? '🟡 Ripe for takeover' : '🔴 Independent'}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Garrison</span><span class="gs-stat-value">🛡️ ${garrison}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Your Power</span><span class="gs-stat-value">⚔️ ${formatNumber(state.weapons.militaryPower)}</span></div>
       </div>
-      <h3 class="gs-section-title">Operations (cost $100 each)</h3>
+      ${!isControlled ? `
+        <h3 class="gs-section-title">⚔️ Military Action</h3>
+        <div class="gs-action-list">
+          ${btn(`⚔️ Attack ${profile.name} (luck + quantity)`, { type: 'attack_country', payload: { country: id, garrison } }, !canAttack)}
+        </div>
+        <p class="gs-muted">${!canAttack ? 'Need at least 10 military power to attack.' : 'Outcome based on your power vs their garrison × luck.'}</p>
+      ` : '<p class="gs-positive">✓ This country is under your control.</p>'}
+      <h3 class="gs-section-title">Political Operations (cost $100 each)</h3>
       <div class="gs-action-list">
         ${btn('💰 Economic Aid (+0.5/tick)', { type: 'invest_influence', payload: { country: id, method: 'economic_aid', amount: 100 } }, state.resources.currency < 100)}
         ${btn('📺 Propaganda (+0.3/tick)', { type: 'invest_influence', payload: { country: id, method: 'propaganda', amount: 100 } }, state.resources.currency < 100)}

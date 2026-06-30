@@ -321,6 +321,50 @@
   color: #fca5a5;
 }
 
+/* Interactive SVG world map */
+.gs-svgmap-host {
+  width: 100%;
+  background: #0b1220;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 16px;
+}
+
+.gs-svgmap {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Non-playable landmasses (default fill) */
+.gs-svgmap path {
+  fill: #334155;
+  stroke: #0b1220;
+  stroke-width: 0.3;
+  transition: fill 200ms ease;
+}
+
+/* Playable countries are interactive */
+.gs-svgmap-country {
+  cursor: pointer;
+}
+
+.gs-svgmap-country:hover path,
+path.gs-svgmap-country:hover {
+  fill: #e2e8f0 !important;
+}
+
+/* Ownership coloring via data-status — targets both <g> children and standalone <path> */
+.gs-svgmap-country[data-status="player"] path,
+path.gs-svgmap-country[data-status="player"] { fill: #16a34a; }
+.gs-svgmap-country[data-status="controlled"] path,
+path.gs-svgmap-country[data-status="controlled"] { fill: #2563eb; }
+.gs-svgmap-country[data-status="influenced"] path,
+path.gs-svgmap-country[data-status="influenced"] { fill: #d97706; }
+.gs-svgmap-country[data-status="hostile"] path,
+path.gs-svgmap-country[data-status="hostile"] { fill: #dc2626; }
+
 /* Toast notifications */
 .gs-toast {
   position: fixed;

@@ -15,16 +15,16 @@ export const COUNTRY_PROFILES: Record<CountryId, CountryProfile> = {
       },
     ],
     startingResources: {
-      currency: 1500,
+      currency: 800,
       materials: {
-        iron_ore: 60,
-        coal: 80,
-        copper: 40,
-        electronics: 30,
+        iron_ore: 30,
+        coal: 40,
+        copper: 20,
+        electronics: 10,
       },
-      energyCapacity: 600,
+      energyCapacity: 400,
     },
-    startingMilitary: 25,
+    startingMilitary: 15,
   },
 
   china: {
@@ -40,16 +40,16 @@ export const COUNTRY_PROFILES: Record<CountryId, CountryProfile> = {
       },
     ],
     startingResources: {
-      currency: 1200,
+      currency: 600,
       materials: {
-        iron_ore: 150,
-        coal: 200,
-        copper: 60,
-        rare_earth: 40,
+        iron_ore: 80,
+        coal: 100,
+        copper: 30,
+        rare_earth: 20,
       },
-      energyCapacity: 500,
+      energyCapacity: 350,
     },
-    startingMilitary: 15,
+    startingMilitary: 10,
   },
 
   russia: {
@@ -75,16 +75,16 @@ export const COUNTRY_PROFILES: Record<CountryId, CountryProfile> = {
       }
     ],
     startingResources: {
-      currency: 10000,
+      currency: 5000,
       materials: {
-        uranium: 80,
-        coal: 200,
-        fuel: 100,
-        iron_ore: 70,
+        uranium: 40,
+        coal: 100,
+        fuel: 50,
+        iron_ore: 35,
       },
-      energyCapacity: 900,
+      energyCapacity: 600,
     },
-    startingMilitary: 20,
+    startingMilitary: 14,
   },
 
   india: {

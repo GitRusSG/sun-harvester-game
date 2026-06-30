@@ -93,14 +93,14 @@ function boot(): void {
   const buildQueue: BuildOrder[] = [];
 
   const BUILD_TIMES: Record<string, number> = {
-    build_power_plant: 8,
-    build_solar_panel: 5,
-    build_mine: 6,
-    build_distribution_network: 12,
-    build_weapons_factory: 10,
-    build_lab: 10,
-    build_orbital_platform: 20,
-    upgrade_storage: 6,
+    build_power_plant: 30,
+    build_solar_panel: 20,
+    build_mine: 25,
+    build_distribution_network: 45,
+    build_weapons_factory: 40,
+    build_lab: 35,
+    build_orbital_platform: 75,
+    upgrade_storage: 20,
   };
 
   function getBuildLabel(type: string): string {
@@ -116,12 +116,12 @@ function boot(): void {
   // ─── Era Costs ──────────────────────────────────────────────────────────
 
   const ERA_COSTS: Record<string, { currency: number; knowledge: number; steel: number; energy: number }> = {
-    nuclear: { currency: 12000, knowledge: 400, steel: 120, energy: 4000 },
-    solar: { currency: 35000, knowledge: 1200, steel: 350, energy: 12000 },
-    orbital: { currency: 120000, knowledge: 3500, steel: 1200, energy: 35000 },
-    mars_colonization: { currency: 350000, knowledge: 12000, steel: 5000, energy: 120000 },
-    space_mining: { currency: 1200000, knowledge: 35000, steel: 18000, energy: 350000 },
-    dyson_ring: { currency: 5000000, knowledge: 120000, steel: 70000, energy: 1200000 },
+    nuclear: { currency: 25000, knowledge: 800, steel: 250, energy: 8000 },
+    solar: { currency: 80000, knowledge: 3000, steel: 800, energy: 25000 },
+    orbital: { currency: 300000, knowledge: 10000, steel: 3000, energy: 80000 },
+    mars_colonization: { currency: 900000, knowledge: 30000, steel: 12000, energy: 250000 },
+    space_mining: { currency: 3000000, knowledge: 80000, steel: 40000, energy: 800000 },
+    dyson_ring: { currency: 12000000, knowledge: 300000, steel: 150000, energy: 3000000 },
   };
 
   function canAdvanceEra(state: GameState): boolean {
@@ -193,6 +193,50 @@ function boot(): void {
 
     if (action.type === 'advance_era') {
       handleAdvanceEra(gameLoop);
+      shell.render(gameLoop.getState());
+      return;
+    }
+
+    // ─── Country Attack (luck + quantity combat) ────────────────────────
+    if (action.type === 'attack_country') {
+      const state = gameLoop.getState();
+      const targetCountry = action.payload.country as CountryId;
+      const garrison = (action.payload.garrison as number) ?? 10;
+      const attackPower = state.weapons.militaryPower;
+
+      if (attackPower < 10) { shell.notify('Need at least 10 military power!', 'error'); return; }
+
+      // Luck factor: random 0.5–1.5 for each side
+      const attackLuck = 0.5 + Math.random();
+      const defenseLuck = 0.5 + Math.random();
+      const attackStrength = attackPower * attackLuck;
+      const defenseStrength = garrison * defenseLuck;
+
+      if (attackStrength > defenseStrength) {
+        // Victory — take the country
+        const influence = { ...state.political.influence, [targetCountry]: 100 };
+        const installed = [...state.political.installedPoliticians];
+        if (!installed.includes(targetCountry)) installed.push(targetCountry);
+        const updated = applyUpdate(state, {
+          mutations: [
+            { path: 'political.influence', value: influence },
+            { path: 'political.installedPoliticians', value: installed },
+            { path: 'weapons.militaryPower', value: Math.max(0, attackPower - garrison * 0.3) },
+          ],
+        });
+        gameLoop.setState(updated);
+        shell.notify(`⚔️ Victory! You conquered ${targetCountry.replace('_', ' ')}! (${attackStrength.toFixed(0)} vs ${defenseStrength.toFixed(0)})`, 'success');
+      } else {
+        // Defeat — lose military power
+        const loss = Math.min(attackPower, garrison * 0.5);
+        const updated = applyUpdate(state, {
+          mutations: [
+            { path: 'weapons.militaryPower', value: Math.max(0, attackPower - loss) },
+          ],
+        });
+        gameLoop.setState(updated);
+        shell.notify(`💀 Defeat! Lost ${loss.toFixed(0)} military power. (${attackStrength.toFixed(0)} vs ${defenseStrength.toFixed(0)})`, 'error');
+      }
       shell.render(gameLoop.getState());
       return;
     }

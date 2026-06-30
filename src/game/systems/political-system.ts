@@ -6,10 +6,10 @@ import type { PoliticalOperation, InfluenceMethod } from '../core/opposition.js'
  * Higher-risk methods provide faster influence gain.
  */
 const INFLUENCE_RATES: Record<InfluenceMethod, number> = {
-  economic_aid: 0.5,
-  propaganda: 0.3,
-  corporate_infiltration: 0.8,
-  intelligence: 1.0,
+  economic_aid: 0.2,
+  propaganda: 0.12,
+  corporate_infiltration: 0.35,
+  intelligence: 0.5,
 };
 
 /** Threshold above which a politician gets installed */
@@ -55,6 +55,7 @@ export class PoliticalSystem {
   readonly id = 'political';
 
   readonly activeEras: Era[] = [
+    'fossil',
     'nuclear',
     'solar',
     'orbital',
