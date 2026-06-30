@@ -630,3 +630,33 @@ path.gs-svgmap-country[data-status="hostile"] { fill: #ef4444; }
   .gs-stat:hover,
   .gs-country-card:hover { transform: none; }
 }
+
+
+/* Info badge on build buttons */
+.gs-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gs-info-badge {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(148,163,184,0.25);
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.gs-info-badge:hover {
+  background: #fbbf24;
+  color: #0f172a;
+}

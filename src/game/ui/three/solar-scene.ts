@@ -388,15 +388,28 @@ export class SolarScene {
 
       // Animated cloud layer (rotates slightly faster than Earth).
       const cloudTexture = this.generateCloudTexture();
+      const cloudMat = new THREE.MeshBasicMaterial({
+        map: cloudTexture,
+        transparent: true,
+        opacity: 0.45,
+        side: THREE.FrontSide,
+        depthWrite: false,
+      });
+      // Upgrade to a real cloud texture (public domain), keep procedural fallback.
+      new THREE.TextureLoader().load(
+        `${import.meta.env.BASE_URL}earth-clouds.jpg`,
+        (tex) => {
+          cloudMat.map = tex;
+          cloudMat.alphaMap = tex;
+          cloudMat.opacity = 0.5;
+          cloudMat.needsUpdate = true;
+        },
+        undefined,
+        () => { /* keep procedural clouds on error */ },
+      );
       const clouds = new THREE.Mesh(
         new THREE.SphereGeometry(body.bodyRadius * 1.015, 48, 48),
-        new THREE.MeshBasicMaterial({
-          map: cloudTexture,
-          transparent: true,
-          opacity: 0.45,
-          side: THREE.FrontSide,
-          depthWrite: false,
-        }),
+        cloudMat,
       );
       clouds.name = 'earth_clouds';
       group.add(clouds);
@@ -428,11 +441,15 @@ export class SolarScene {
    */
   private createBodyMaterial(body: CelestialBody): THREE.Material {
     if (body.id === 'earth') {
-      return new THREE.MeshStandardMaterial({
-        map: this.generateEarthTexture(),
-        roughness: 0.9,
+      const material = new THREE.MeshStandardMaterial({
+        map: this.generateEarthTexture(), // instant procedural fallback
+        roughness: 0.85,
         metalness: 0.0,
       });
+      // Upgrade to a real NASA "Blue Marble" texture from the public three.js
+      // examples repo. If the network load fails, the procedural map remains.
+      this.loadRealEarthTextures(material);
+      return material;
     }
     if (body.id === 'moon') {
       return new THREE.MeshStandardMaterial({
@@ -453,6 +470,30 @@ export class SolarScene {
       roughness: 0.85,
       metalness: 0.05,
     });
+  }
+
+  /**
+   * Asynchronously loads real Earth textures (color + specular) from the
+   * public three.js examples repository (NASA Blue Marble imagery). Applies
+   * them to the given material once loaded; silently keeps the procedural
+   * fallback if the network request fails.
+   */
+  private loadRealEarthTextures(material: THREE.MeshStandardMaterial): void {
+    const loader = new THREE.TextureLoader();
+
+    // Bundled with the app (public/) so there's no CORS or CDN dependency.
+    const COLOR_URL = `${import.meta.env.BASE_URL}earth-texture.jpg`;
+
+    loader.load(
+      COLOR_URL,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        material.map = tex;
+        material.needsUpdate = true;
+      },
+      undefined,
+      () => { /* keep procedural fallback on error */ },
+    );
   }
 
   /**

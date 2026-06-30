@@ -405,8 +405,13 @@ export class GameShell {
   private renderBuild(state: GameState): void {
     this.panelTitle.textContent = '🔨 Build';
     const currency = state.resources.currency;
-    const btn = (label: string, action: ActionPayload, cost: number) =>
-      `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${currency < cost ? 'disabled' : ''}>${label}</button>`;
+    // btn with an optional info tooltip (ⓘ shows details on hover).
+    const btn = (label: string, action: ActionPayload, cost: number, info = '') => {
+      const infoIcon = info
+        ? ` <span class="gs-info-badge" title="${info.replace(/"/g, '&quot;')}">ⓘ</span>`
+        : '';
+      return `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${currency < cost ? 'disabled' : ''}>${label}${infoIcon}</button>`;
+    };
 
     // Calculate labs and storage upgrade costs.
     const storageCost = 500 + state.energy.maxStorage * 0.8;
@@ -416,28 +421,28 @@ export class GameShell {
     this.panelContent.innerHTML = `
       <h3 class="gs-section-title">Power & Energy</h3>
       <div class="gs-action-list">
-        ${btn('⚡ Coal Power Plant ($350)', { type: 'build_power_plant', payload: { type: 'coal', cost: 350 } }, 350)}
-        ${btn('☀️ Solar Panel ($250)', { type: 'build_solar_panel', payload: { locationId: 'arizona', cost: 250 } }, 250)}
+        ${btn('⚡ Coal Power Plant ($350)', { type: 'build_power_plant', payload: { type: 'coal', cost: 350 } }, 350, 'Generates energy by burning coal. Consumes coal stockpile. Reliable early power.')}
+        ${btn('☀️ Solar Panel ($250)', { type: 'build_solar_panel', payload: { locationId: 'arizona', cost: 250 } }, 250, 'Clean energy from sunlight. Output drops in bad weather, but needs no fuel.')}
         ${btn(`🔋 Upgrade Storage ($${Math.floor(storageCost)}) [+200 cap]`, { type: 'upgrade_storage', payload: { cost: Math.floor(storageCost) } }, storageCost)}
       </div>
 
       <h3 class="gs-section-title">Mining & Industry</h3>
       <div class="gs-action-list">
-        ${btn('⛏️ Coal Mine ($200)', { type: 'build_mine', payload: { materialType: 'coal', cost: 200, depositQuality: 0.5 } }, 200)}
-        ${btn('⛏️ Iron Mine ($220)', { type: 'build_mine', payload: { materialType: 'iron_ore', cost: 220, depositQuality: 0.4 } }, 220)}
-        ${btn('⛏️ Silicon Mine ($250)', { type: 'build_mine', payload: { materialType: 'silicon', cost: 250, depositQuality: 0.35 } }, 250)}
-        ${btn('🏭 Distribution Network ($500)', { type: 'build_distribution_network', payload: { cost: 500 } }, 500)}
+        ${btn('⛏️ Coal Mine ($200)', { type: 'build_mine', payload: { materialType: 'coal', cost: 200, depositQuality: 0.5 } }, 200, 'Extracts coal over time — fuel for coal power plants.')}
+        ${btn('⛏️ Iron Mine ($220)', { type: 'build_mine', payload: { materialType: 'iron_ore', cost: 220, depositQuality: 0.4 } }, 220, 'Extracts iron ore — refined into steel for building, weapons, and eras.')}
+        ${btn('⛏️ Silicon Mine ($250)', { type: 'build_mine', payload: { materialType: 'silicon', cost: 250, depositQuality: 0.35 } }, 250, 'Extracts silicon — used to craft solar cells and electronics.')}
+        ${btn('🏭 Distribution Network ($500)', { type: 'build_distribution_network', payload: { cost: 500 } }, 500, 'Increases the rate stored energy converts into currency income.')}
       </div>
 
       <h3 class="gs-section-title">Research & Military</h3>
       <div class="gs-action-list">
-        ${btn(`🔬 Research Lab ($${labCost}) [+2 knowledge/tick]`, { type: 'build_lab', payload: { cost: labCost } }, labCost)}
-        ${btn(`🔫 Weapons Factory ($${weaponsCost}, +5 power, uses 12 energy/tick)`, { type: 'build_weapons_factory', payload: { producing: 'conventional', cost: weaponsCost } }, weaponsCost)}
+        ${btn(`🔬 Research Lab ($${labCost}) [+2 knowledge/tick]`, { type: 'build_lab', payload: { cost: labCost } }, labCost, 'Knowledge per tick (scaled by morale). Powers research and era advancement. Cost rises per lab.')}
+        ${btn(`🔫 Weapons Factory ($${weaponsCost}, +5 power, uses 12 energy/tick)`, { type: 'build_weapons_factory', payload: { producing: 'conventional', cost: weaponsCost } }, weaponsCost, 'Plus 5 military power on build, then makes weapons from steel. Drains 12 energy/tick. Cost rises per factory.')}
       </div>
 
       <h3 class="gs-section-title">Space (requires orbital era)</h3>
       <div class="gs-action-list">
-        ${btn('🛰️ Orbital Platform ($2000 + 10 fuel + 20 steel)', { type: 'build_orbital_platform', payload: { type: 'solar_collector', output: 15, cost: 2000 } }, 2000)}
+        ${btn('🛰️ Orbital Platform ($2000 + 10 fuel + 20 steel)', { type: 'build_orbital_platform', payload: { type: 'solar_collector', output: 15, cost: 2000 } }, 2000, 'Space solar collector — generates energy with no weather penalty. Needs 10 fuel + 20 steel too.')}
       </div>
 
       <h3 class="gs-section-title">Placement Grid</h3>
