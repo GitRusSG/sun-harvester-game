@@ -1056,17 +1056,19 @@ export class GameShell {
           <optgroup label="Materials">
             <option value="coal">Coal</option>
             <option value="iron_ore">Iron Ore</option>
-            <option value="steel">Steel</option>
             <option value="silicon">Silicon</option>
             <option value="copper">Copper</option>
-            <option value="electronics">Electronics</option>
             <option value="uranium">Uranium</option>
             <option value="fuel">Fuel</option>
-            <option value="fuel_rods">Fuel Rods</option>
             <option value="rare_earth">Rare Earth</option>
-            <option value="advanced_circuits">Adv. Circuits</option>
-            <option value="solar_cells">Solar Cells</option>
             <option value="water">Water</option>
+          </optgroup>
+          <optgroup label="Crafted Items">
+            <option value="steel">Steel</option>
+            <option value="solar_cells">Solar Cells</option>
+            <option value="electronics">Electronics</option>
+            <option value="fuel_rods">Fuel Rods</option>
+            <option value="advanced_circuits">Adv. Circuits</option>
           </optgroup>
           <optgroup label="Mars Resources">
             <option value="regolith_iron">Regolith Iron</option>
