@@ -12,10 +12,12 @@ import type { GameState, CountryId } from '../core/types.js';
 import type { MaterialType } from '../core/resources.js';
 import { WEATHER_MODIFIERS } from '../core/weather.js';
 import { formatNumber } from '../utils/format.js';
+import { ERA_ORDER } from '../core/state-manager.js';
 import { SolarScene } from './three/solar-scene.js';
 import { CelestialNavigator, CELESTIAL_BODIES, isBodyUnlocked } from './celestial-nav.js';
 import { COUNTRY_PROFILES, getAllCountryIds } from '../data/countries.js';
 import { getTreeNodes } from '../data/tech-trees.js';
+import { RECIPES } from '../data/recipes.js';
 import { TUTORIAL_STEPS } from './tutorial.js';
 
 type ActionPayload = { type: string; payload: Record<string, unknown> };
@@ -157,6 +159,7 @@ export class GameShell {
       <span class="gs-hud-item" data-hud="military">🔫 0</span>
       <button class="gs-hud-btn" data-open="dashboard">📊 Dashboard</button>
       <button class="gs-hud-btn" data-open="build">🔨 Build</button>
+      <button class="gs-hud-btn" data-open="crafting">⚒️ Craft</button>
       <button class="gs-hud-btn" data-open="research">🔬 Research</button>
       <button class="gs-hud-btn" data-open="settings">⚙️ Settings</button>
     `;
@@ -304,6 +307,7 @@ export class GameShell {
     switch (id) {
       case 'dashboard': this.renderDashboard(state); break;
       case 'build': this.renderBuild(state); break;
+      case 'crafting': this.renderCraftingPanel(state); break;
       case 'research': this.renderResearch(state); break;
       case 'settings': this.renderSettingsPanel(state); break;
       case 'earth': this.renderEarthPanel(state); break;
@@ -471,6 +475,54 @@ export class GameShell {
     gridHtml += '</div>';
     gridHtml += `<p class="gs-muted">${idx}/${COLS * ROWS} slots used</p>`;
     return gridHtml;
+  }
+
+  private renderCraftingPanel(state: GameState): void {
+    this.panelTitle.textContent = '⚒️ Crafting';
+    const currentEraIdx = ERA_ORDER.indexOf(state.currentEra);
+    const btn = (label: string, action: ActionPayload, disabled = false) =>
+      `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}</button>`;
+
+    // Show active craft orders.
+    let queueHtml = '';
+    for (const factory of state.infrastructure.factories) {
+      if (factory.type !== 'crafting') continue;
+      for (const order of factory.currentOrders) {
+        const pct = Math.round((order.progress / Math.max(1, order.totalTime)) * 100);
+        queueHtml += `<div class="gs-stat"><span class="gs-stat-label">${order.recipeId} ×${order.quantity}</span><span class="gs-stat-value">${pct}%</span></div>`;
+      }
+    }
+
+    // Show available recipes.
+    let recipesHtml = '';
+    for (const recipe of RECIPES) {
+      const reqEraIdx = ERA_ORDER.indexOf(recipe.unlockedByEra);
+      if (currentEraIdx < reqEraIdx) continue;
+
+      const inputs = recipe.inputs.map(i => {
+        const have = state.materials.stockpiles[i.material] ?? 0;
+        const ok = have >= i.quantity;
+        return `<span style="color:${ok ? '#86efac' : '#fca5a5'}">${i.material}: ${formatNumber(have)}/${i.quantity}</span>`;
+      }).join(', ');
+
+      const canCraft = recipe.inputs.every(i => (state.materials.stockpiles[i.material] ?? 0) >= i.quantity);
+      const outputs = recipe.outputs.map(o => `${o.quantity} ${o.material}`).join(', ');
+
+      recipesHtml += `
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:10px;margin-bottom:8px;">
+          <strong>${recipe.name}</strong> (${recipe.craftTime}s)<br>
+          <small>Needs: ${inputs}</small><br>
+          <small>Makes: ${outputs}</small><br>
+          ${btn(`Craft ${recipe.name}`, { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 1 } }, !canCraft)}
+        </div>
+      `;
+    }
+
+    this.panelContent.innerHTML = `
+      ${queueHtml ? `<h3 class="gs-section-title">Active Orders</h3><div class="gs-stat-grid">${queueHtml}</div>` : ''}
+      <h3 class="gs-section-title">Recipes</h3>
+      ${recipesHtml || '<p class="gs-muted">No recipes available yet. Advance to a new era to unlock crafting.</p>'}
+    `;
   }
 
   private renderResearch(state: GameState): void {

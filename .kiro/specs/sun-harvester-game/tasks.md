@@ -6,7 +6,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
 
 ## Tasks
 
-- [ ] 1. Set up project structure and core type definitions
+- [x] 1. Set up project structure and core type definitions
   - [x] 1.1 Initialize Vite + TypeScript project structure for the game
     - Create `src/game/` directory structure with folders: `core/`, `systems/`, `data/`, `ui/`, `utils/`
     - Configure Vite for the game entry point
@@ -88,10 +88,10 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Test event queuing and dispatch
     - _Requirements: 1.1, 1.2, 1.3, 6.2_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Implement Weather System
+- [x] 5. Implement Weather System
   - [x] 5.1 Implement the Weather System
     - Create `src/game/systems/weather-system.ts` implementing `WeatherSystem` interface
     - Implement weather cycling on configurable tick intervals
@@ -107,7 +107,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Test weather change events are emitted
     - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 6. Implement Resource System
+- [x] 6. Implement Resource System
   - [x] 6.1 Implement the Resource System (energy, currency, materials)
     - Create `src/game/systems/resource-system.ts` implementing `ResourceSystem` interface
     - Implement `calculateProduction(state)` computing energy/second, currency/second, maintenance costs, net currency, and material rates
@@ -137,7 +137,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Test zero-currency state blocks construction
     - _Requirements: 1.1, 1.2, 1.3, 2.2, 4.2, 8.3, 12.6_
 
-- [ ] 7. Implement Supply Chain System
+- [x] 7. Implement Supply Chain System
   - [x] 7.1 Implement the Supply Chain System
     - Create `src/game/systems/supply-chain-system.ts` implementing `SupplyChainSystem` interface
     - Create `src/game/data/recipes.ts` defining all crafting recipes as static data (e.g., Steel Beams: 3 Iron + 1 Coal, Solar Cells: 2 Silicon + 1 Copper)
@@ -156,7 +156,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Test recipe unlock conditions
     - _Requirements: 13.1, 13.2, 13.3, 13.5, 13.6_
 
-- [ ] 8. Implement Tech System
+- [x] 8. Implement Tech System
   - [x] 8.1 Implement the Tech System with five research trees
     - Create `src/game/systems/tech-system.ts` implementing `TechSystem` interface
     - Create `src/game/data/tech-trees.ts` defining all five trees (energy, materials, weapons, political, space) with nodes, prerequisites, costs, and bonuses
@@ -175,7 +175,7 @@ Build a browser-based incremental management game using TypeScript and Vite. The
     - Test status transitions
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 9. Implement Weapons System
+- [x] 9. Implement Weapons System
   - [x] 9.1 Implement the Weapons System
     - Create `src/game/systems/weapons-system.ts` implementing `WeaponsSystem` interface
     - Create `src/game/data/weapons.ts` defining weapon categories, recipes, and tier unlocks
