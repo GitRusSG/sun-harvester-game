@@ -29,8 +29,8 @@ export const MAX_RESEARCH_SPEED = 1000.0;
 // Max protest suppression level.
 export const MAX_PROTEST_SUPPRESSION = 100;
 
-// Max morale retainment level (reduces morale decay).
-export const MAX_MORALE_RETAINMENT = 5;
+// Max morale retainment level (reduces morale decay). 0 = no cap.
+export const MAX_MORALE_RETAINMENT = 0;
 
 // Pay off protesters cost multiplier (base cost × UN hostility).
 export const PAYOFF_PROTESTERS_BASE_COST = 5000;

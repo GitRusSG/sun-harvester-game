@@ -427,6 +427,32 @@ function boot(): void {
       return;
     }
 
+    // ─── Market Sell ────────────────────────────────────────────────────
+    if (action.type === 'market_sell') {
+      const state = gameLoop.getState();
+      const material = action.payload.material as string;
+      const quantity = action.payload.quantity as number;
+      const currentQty = (state.materials.stockpiles as Record<string, number>)[material] ?? 0;
+      if (quantity <= 0 || currentQty < quantity) { shell.notify('Not enough material!', 'error'); return; }
+      const PRICES: Record<string, number> = {
+        coal: 5, iron_ore: 8, steel: 25, silicon: 12, solar_cells: 40,
+        copper: 10, electronics: 50, uranium: 80, fuel_rods: 120,
+        rare_earth: 100, advanced_circuits: 200, fuel: 15,
+        regolith_iron: 30, martian_ice: 20, co2: 10,
+      };
+      const price = PRICES[material] ?? 10;
+      const revenue = price * quantity;
+      const newStockpiles = { ...state.materials.stockpiles, [material]: currentQty - quantity };
+      gameLoop.setState(applyUpdate(state, {
+        resources: { currency: state.resources.currency + revenue },
+        materials: { stockpiles: newStockpiles },
+      }));
+      shell.notify(`💰 Sold ${quantity} ${material.replace('_', ' ')} for $${formatNumber(revenue)}`, 'success');
+      shell.render(gameLoop.getState());
+      shell.refreshActivePanel();
+      return;
+    }
+
     // ─── Custom quantity craft (reads input from DOM) ──────────────────
     if (action.type === 'queue_craft_custom') {
       const recipeId = action.payload.recipeId as string;
@@ -536,7 +562,7 @@ function boot(): void {
           shell.notify(timewarpActive ? '⏩ Time Warp ACTIVE! (×' + TIMEWARP_SPEED + ' speed)' : '⏸️ Time Warp OFF', 'info');
           break;
         case 'morale_retainment':
-          if (moraleRetainmentLevel >= MAX_MORALE_RETAINMENT) { shell.notify('Morale retainment maxed!', 'warning'); break; }
+          if (MAX_MORALE_RETAINMENT > 0 && moraleRetainmentLevel >= MAX_MORALE_RETAINMENT) { shell.notify('Morale retainment maxed!', 'warning'); break; }
           moraleRetainmentLevel += 1;
           try { localStorage.setItem('shg_morale_retain', String(moraleRetainmentLevel)); } catch { /* */ }
           shell.notify(`😊 Morale retainment level ${moraleRetainmentLevel}! Decay reduced.`, 'success');

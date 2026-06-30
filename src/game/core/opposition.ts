@@ -7,6 +7,7 @@ export interface OppositionState {
   activeProtests: Protest[];
   activeSanctions: Sanction[];
   lastUNAttackTick: number;
+  finalConfrontationDone?: boolean;
 }
 
 export interface Protest {

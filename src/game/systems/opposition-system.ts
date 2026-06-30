@@ -288,9 +288,13 @@ export class OppositionSystem {
       }
     }
 
-    // --- Final UN confrontation ---
+    // --- Final UN confrontation (fires only once when UN still has power) ---
     const globalInfluence = this.calculateGlobalInfluence(state);
-    if (globalInfluence > FINAL_CONFRONTATION_INFLUENCE_THRESHOLD && unHostility < 100) {
+    if (
+      globalInfluence > FINAL_CONFRONTATION_INFLUENCE_THRESHOLD &&
+      unPowerLevel > 0 &&
+      !state.opposition.finalConfrontationDone
+    ) {
       unHostility = 100;
       events.push({
         id: `un_final_confrontation_${generateId()}`,
@@ -298,6 +302,7 @@ export class OppositionSystem {
         payload: { attackType: 'final_confrontation', severity: 1.0 },
         timestamp: Date.now(),
       });
+      mutations.push({ path: 'opposition.finalConfrontationDone', value: true });
     }
 
     // Clamp values

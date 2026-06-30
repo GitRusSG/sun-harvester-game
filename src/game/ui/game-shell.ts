@@ -274,6 +274,7 @@ export class GameShell {
       <button class="gs-hud-btn" data-open="build">🔨 Build</button>
       <button class="gs-hud-btn" data-open="upgrades">⬆️ Upgrades</button>
       <button class="gs-hud-btn" data-open="crafting">⚒️ Craft</button>
+      <button class="gs-hud-btn" data-open="market">💹 Market</button>
       <button class="gs-hud-btn" data-open="research">🔬 Research</button>
       <button class="gs-hud-btn" data-open="settings">⚙️ Settings</button>
     `;
@@ -432,6 +433,7 @@ export class GameShell {
       case 'build': this.renderBuild(state); break;
       case 'upgrades': this.renderUpgradesPanel(state); break;
       case 'crafting': this.renderCraftingPanel(state); break;
+      case 'market': this.renderMarketPanel(state); break;
       case 'research': this.renderResearch(state); break;
       case 'settings': this.renderSettingsPanel(state); break;
       case 'earth': this.renderEarthPanel(state); break;
@@ -822,6 +824,54 @@ export class GameShell {
     gridHtml += '</div>';
     gridHtml += `<p class="gs-muted">${idx}/${COLS * ROWS} slots used${captured > 0 ? ` · +${captured * 16} slots from ${captured} captured ${captured === 1 ? 'country' : 'countries'}` : ''}</p>`;
     return gridHtml;
+  }
+
+  private renderMarketPanel(state: GameState): void {
+    this.panelTitle.textContent = '💹 Market';
+    const stockpiles = state.materials.stockpiles;
+
+    // Market prices per unit (currency earned when selling)
+    const MARKET_PRICES: Record<string, { price: number; label: string; emoji: string }> = {
+      coal: { price: 5, label: 'Coal', emoji: '⛏️' },
+      iron_ore: { price: 8, label: 'Iron Ore', emoji: '⛏️' },
+      steel: { price: 25, label: 'Steel', emoji: '🔩' },
+      silicon: { price: 12, label: 'Silicon', emoji: '💎' },
+      solar_cells: { price: 40, label: 'Solar Cells', emoji: '☀️' },
+      copper: { price: 10, label: 'Copper', emoji: '🔶' },
+      electronics: { price: 50, label: 'Electronics', emoji: '🔌' },
+      uranium: { price: 80, label: 'Uranium', emoji: '☢️' },
+      fuel_rods: { price: 120, label: 'Fuel Rods', emoji: '🔋' },
+      rare_earth: { price: 100, label: 'Rare Earth', emoji: '💠' },
+      advanced_circuits: { price: 200, label: 'Adv. Circuits', emoji: '🧬' },
+      fuel: { price: 15, label: 'Fuel', emoji: '⛽' },
+      regolith_iron: { price: 30, label: 'Regolith Iron', emoji: '🔴' },
+      martian_ice: { price: 20, label: 'Martian Ice', emoji: '🧊' },
+      co2: { price: 10, label: 'CO2', emoji: '💨' },
+    };
+
+    const btn = (label: string, action: ActionPayload, disabled: boolean, info: string) => {
+      const infoIcon = `<span class="gs-info-badge" title="${info.replace(/"/g, '&quot;')}">ⓘ</span>`;
+      return `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}${infoIcon}</button>`;
+    };
+
+    let rows = '';
+    for (const [mat, info] of Object.entries(MARKET_PRICES)) {
+      const qty = stockpiles[mat as keyof typeof stockpiles] ?? 0;
+      if (qty < 1) continue;
+      const sell10 = Math.min(10, Math.floor(qty));
+      const sellAll = Math.floor(qty);
+      rows += `
+        <div class="gs-market-row" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="min-width:140px;">${info.emoji} ${info.label}: <b>${formatNumber(qty)}</b></span>
+          <span style="color:#94a3b8;font-size:12px;">$${info.price}/ea</span>
+          ${btn(`Sell 10 ($${formatNumber(info.price * sell10)})`, { type: 'market_sell', payload: { material: mat, quantity: sell10 } }, qty < 1, `Sell ${sell10} ${info.label} for $${formatNumber(info.price * sell10)}`)}
+          ${btn(`Sell All ($${formatNumber(info.price * sellAll)})`, { type: 'market_sell', payload: { material: mat, quantity: sellAll } }, qty < 1, `Sell all ${sellAll} ${info.label} for $${formatNumber(info.price * sellAll)}`)}
+        </div>`;
+    }
+
+    this.panelContent.innerHTML = rows
+      ? `<p class="gs-muted">Sell materials for currency. Prices are fixed.</p>${rows}`
+      : `<p class="gs-muted">No materials to sell. Build mines and craft to fill your stockpiles.</p>`;
   }
 
   private renderCraftingPanel(state: GameState): void {
