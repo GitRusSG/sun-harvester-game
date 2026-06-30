@@ -26,6 +26,9 @@ export const MAX_KNOWLEDGE_SPEED = 100000.0;
 // Max research speed multiplier.
 export const MAX_RESEARCH_SPEED = 1000.0;
 
+// Max craft speed multiplier.
+export const MAX_CRAFT_SPEED = 10.0;
+
 // Max protest suppression level.
 export const MAX_PROTEST_SUPPRESSION = 100;
 

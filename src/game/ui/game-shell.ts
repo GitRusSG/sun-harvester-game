@@ -16,7 +16,7 @@ import { ERA_ORDER } from '../core/state-manager.js';
 import { SolarScene } from './three/solar-scene.js';
 import { CelestialNavigator, CELESTIAL_BODIES, isBodyUnlocked } from './celestial-nav.js';
 import { WorldMap } from './world-map.js';
-import { COUNTRY_PROFILES, getAllCountryIds } from '../data/countries.js';
+import { COUNTRY_PROFILES, getAllCountryIds, DEV_CONSOLE_COUNTRIES } from '../data/countries.js';
 import { getTreeNodes } from '../data/tech-trees.js';
 import { RECIPES } from '../data/recipes.js';
 import { TUTORIAL_STEPS } from './tutorial.js';
@@ -275,6 +275,7 @@ export class GameShell {
       <button class="gs-hud-btn" data-open="upgrades">⬆️ Upgrades</button>
       <button class="gs-hud-btn" data-open="crafting">⚒️ Craft</button>
       <button class="gs-hud-btn" data-open="market">💹 Market</button>
+      <button class="gs-hud-btn" data-open="buildings">🏗️ Buildings</button>
       <button class="gs-hud-btn" data-open="research">🔬 Research</button>
       <button class="gs-hud-btn" data-open="settings">⚙️ Settings</button>
     `;
@@ -434,6 +435,7 @@ export class GameShell {
       case 'upgrades': this.renderUpgradesPanel(state); break;
       case 'crafting': this.renderCraftingPanel(state); break;
       case 'market': this.renderMarketPanel(state); break;
+      case 'buildings': this.renderBuildingsPanel(state); break;
       case 'research': this.renderResearch(state); break;
       case 'settings': this.renderSettingsPanel(state); break;
       case 'earth': this.renderEarthPanel(state); break;
@@ -662,6 +664,7 @@ export class GameShell {
         ${btn('⚡ Construction Speed (+25%) — $8000', { type: 'upgrade_buy', payload: { kind: 'build_speed', cost: 8000 } }, 8000, 'All future builds complete 25% faster (stacks).')}
         ${btn('🧠 Knowledge Speed (+50%) — $6000', { type: 'upgrade_buy', payload: { kind: 'knowledge_speed', cost: 6000 } }, 6000, 'Labs produce knowledge 50% faster (stacks). Speeds up era advancement.')}
         ${btn('🔬 Research Speed (+50%) — $10000', { type: 'upgrade_buy', payload: { kind: 'research_speed', cost: 10000 } }, 10000, 'Active research completes 50% faster (stacks). Unlocks tech tree nodes sooner.')}
+        ${btn('⚒️ Craft Speed (+50%) — $9000', { type: 'upgrade_buy', payload: { kind: 'craft_speed', cost: 9000 } }, 9000, 'Crafting completes 50% faster (stacks). Materials are refined sooner.')}
       </div>
 
       <h3 class="gs-section-title">🛡️ Stability</h3>
@@ -826,6 +829,80 @@ export class GameShell {
     return gridHtml;
   }
 
+  private renderBuildingsPanel(state: GameState): void {
+    this.panelTitle.textContent = '🏗️ Your Buildings';
+    const btn = (label: string, action: ActionPayload) =>
+      `<button class="gs-action-btn gs-danger" style="font-size:12px;padding:4px 8px;" data-action='${JSON.stringify(action)}'>${label}</button>`;
+
+    let html = '';
+
+    // Solar Panels
+    if (state.energy.solarPanels.length > 0) {
+      html += `<h3 class="gs-section-title">☀️ Solar Panels (${state.energy.solarPanels.length})</h3><div class="gs-action-list">`;
+      state.energy.solarPanels.forEach((p, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <span>☀️ Panel #${i + 1} (eff: ${(p.efficiency * 100).toFixed(0)}%)</span>
+          ${btn('🗑️ Demolish', { type: 'demolish', payload: { building: 'solar_panel', index: i } })}
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // Power Plants
+    if (state.energy.powerPlants.length > 0) {
+      html += `<h3 class="gs-section-title">⚡ Power Plants (${state.energy.powerPlants.length})</h3><div class="gs-action-list">`;
+      state.energy.powerPlants.forEach((p, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <span>⚡ ${p.type.charAt(0).toUpperCase() + p.type.slice(1)} Plant #${i + 1}</span>
+          ${btn('🗑️ Demolish', { type: 'demolish', payload: { building: 'power_plant', index: i } })}
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // Mines
+    if (state.infrastructure.mines.length > 0) {
+      html += `<h3 class="gs-section-title">⛏️ Mines (${state.infrastructure.mines.length})</h3><div class="gs-action-list">`;
+      state.infrastructure.mines.forEach((m, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <span>⛏️ ${m.materialType.replace('_', ' ')} mine (rate: ${m.productionRate.toFixed(1)}/s)</span>
+          ${btn('🗑️ Demolish', { type: 'demolish', payload: { building: 'mine', index: i } })}
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // Factories
+    if (state.infrastructure.factories.length > 0) {
+      html += `<h3 class="gs-section-title">🏭 Factories (${state.infrastructure.factories.length})</h3><div class="gs-action-list">`;
+      state.infrastructure.factories.forEach((f, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <span>🏭 ${f.type} factory (lv ${f.level}, ${f.currentOrders.length} orders)</span>
+          ${btn('🗑️ Demolish', { type: 'demolish', payload: { building: 'factory', index: i } })}
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // Weapons Factories
+    if (state.weapons.factories.length > 0) {
+      html += `<h3 class="gs-section-title">🔫 Weapons Factories (${state.weapons.factories.length})</h3><div class="gs-action-list">`;
+      state.weapons.factories.forEach((_, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <span>🔫 Weapons Factory #${i + 1}</span>
+          ${btn('🗑️ Demolish', { type: 'demolish', payload: { building: 'weapons_factory', index: i } })}
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    if (!html) {
+      html = '<p class="gs-muted">No buildings yet. Build some from the 🔨 Build panel.</p>';
+    }
+
+    this.panelContent.innerHTML = html;
+  }
+
   private renderMarketPanel(state: GameState): void {
     this.panelTitle.textContent = '💹 Market';
     const stockpiles = state.materials.stockpiles;
@@ -966,7 +1043,7 @@ export class GameShell {
   private renderSettingsPanel(state: GameState): void {
     this.panelTitle.textContent = '⚙️ Settings';
 
-    const russiaCheat = state.country === 'russia' ? `
+    const russiaCheat = DEV_CONSOLE_COUNTRIES.has(state.country) ? `
       <h3 class="gs-section-title">🇷🇺 Russia Dev Console</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <select id="russia-cheat-resource" class="gs-action-btn" style="padding:6px 10px;min-width:140px;">
@@ -990,7 +1067,8 @@ export class GameShell {
           <option value="knowledge">Knowledge</option>
           <option value="military">Military Power</option>
         </select>
-        <button class="gs-action-btn" data-action='${JSON.stringify({ type: 'russia_cheat', payload: {} })}'>💰 Grant 9B</button>
+        <input id="russia-cheat-amount" type="number" value="9000000000" min="1" style="width:130px;padding:6px 10px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#f8fafc;font-size:14px;" />
+        <button class="gs-action-btn" data-action='${JSON.stringify({ type: 'russia_cheat', payload: {} })}'>💰 Grant</button>
       </div>
     ` : '';
 
@@ -1156,16 +1234,50 @@ export class GameShell {
       this.onAction({ type: 'fix_mars_unlock', payload: {} });
     }
 
-    this.panelContent.innerHTML = (mars.unlocked || shouldBeUnlocked)
-      ? `<div class="gs-stat-grid">
-          <div class="gs-stat"><span class="gs-stat-label">Base Level</span><span class="gs-stat-value">${mars.baseLevel || 1}</span></div>
-          <div class="gs-stat"><span class="gs-stat-label">Regolith Iron</span><span class="gs-stat-value">${formatNumber(mars.resources.regolith_iron ?? 0)}</span></div>
-          <div class="gs-stat"><span class="gs-stat-label">Martian Ice</span><span class="gs-stat-value">${formatNumber(mars.resources.martian_ice ?? 0)}</span></div>
-          <div class="gs-stat"><span class="gs-stat-label">CO2 Fuel</span><span class="gs-stat-value">${formatNumber(mars.resources.co2 ?? 0)}</span></div>
-          <div class="gs-stat"><span class="gs-stat-label">Launch Cost Reduction</span><span class="gs-stat-value">${((1 - (mars.launchCostReduction ?? 1)) * 100).toFixed(0)}%</span></div>
-        </div>
-        <p class="gs-muted">Mars produces unique resources each tick. Lower gravity reduces orbital launch costs.</p>`
-      : `<p class="gs-muted">Mars not unlocked. Reach the Mars Colonization Era.</p>`;
+    if (!mars.unlocked && !shouldBeUnlocked) {
+      this.panelContent.innerHTML = `<p class="gs-muted">Mars not unlocked. Reach the Mars Colonization Era.</p>`;
+      return;
+    }
+
+    const btn = (label: string, action: ActionPayload, disabled = false, info = '') => {
+      const infoIcon = info ? ` <span class="gs-info-badge" title="${info.replace(/"/g, '&quot;')}">ⓘ</span>` : '';
+      return `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}${infoIcon}</button>`;
+    };
+
+    const regolith = mars.resources.regolith_iron ?? 0;
+    const ice = mars.resources.martian_ice ?? 0;
+    const co2 = mars.resources.co2 ?? 0;
+    const hasRelay = (mars as any).relayBuilt ?? false;
+
+    this.panelContent.innerHTML = `
+      <div class="gs-stat-grid">
+        <div class="gs-stat"><span class="gs-stat-label">Base Level</span><span class="gs-stat-value">${mars.baseLevel || 1}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Regolith Iron</span><span class="gs-stat-value">${formatNumber(regolith)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Martian Ice</span><span class="gs-stat-value">${formatNumber(ice)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">CO2 Fuel</span><span class="gs-stat-value">${formatNumber(co2)}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Launch Cost</span><span class="gs-stat-value">${((1 - (mars.launchCostReduction ?? 1)) * 100).toFixed(0)}% cheaper</span></div>
+      </div>
+
+      <h3 class="gs-section-title">🚀 Send to Earth</h3>
+      <p class="gs-muted">Transfer Mars resources to Earth stockpiles (costs fuel).</p>
+      <div class="gs-action-list">
+        ${btn(`Send 50 Regolith Iron → Earth`, { type: 'transfer_to_earth', payload: { material: 'regolith_iron', amount: 50 } }, regolith < 50, 'Costs fuel based on amount. Adds to Earth iron stockpile.')}
+        ${btn(`Send 50 Martian Ice → Earth`, { type: 'transfer_to_earth', payload: { material: 'martian_ice', amount: 50 } }, ice < 50, 'Costs fuel. Ice becomes water on Earth.')}
+        ${btn(`Send 50 CO2 → Earth (as fuel)`, { type: 'transfer_to_earth', payload: { material: 'co2', amount: 50 } }, co2 < 50, 'Costs fuel. CO2 converted to usable fuel on Earth.')}
+      </div>
+
+      <h3 class="gs-section-title">⬆️ Upgrade Base</h3>
+      <div class="gs-action-list">
+        ${btn(`⬆️ Upgrade Mars Base (20 fuel + 15 steel)`, { type: 'upgrade_mars_base', payload: {} }, state.materials.stockpiles.fuel < 20 || state.materials.stockpiles.steel < 15, 'Increases production rates for all Mars resources.')}
+      </div>
+
+      <h3 class="gs-section-title">📡 Deep Space Relay</h3>
+      <div class="gs-action-list">
+        ${hasRelay
+          ? btn(`📡 Contact Aliens`, { type: 'contact_aliens', payload: {} }, false, 'Use the relay antenna to send a signal into deep space.')
+          : btn(`📡 Build Relay Antenna ($50,000 + 100 electronics)`, { type: 'build_relay', payload: {} }, state.resources.currency < 50000 || (state.materials.stockpiles.electronics ?? 0) < 100, 'Build a deep-space communication relay to contact alien civilizations.')}
+      </div>
+    `;
   }
 
   private renderAsteroidsPanel(state: GameState): void {

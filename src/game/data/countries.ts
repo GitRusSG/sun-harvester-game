@@ -8,6 +8,12 @@ export const IMMUNE_COUNTRIES: Set<CountryId> = new Set([
   // 'russia',  // Uncomment to make Russia unconquerable
 ]);
 
+// ─── Dev Console Countries ───────────────────────────────────────────────────
+// Countries listed here get the "Grant 9B" dev console in Settings.
+export const DEV_CONSOLE_COUNTRIES: Set<CountryId> = new Set([
+  'russia',
+]);
+
 export const COUNTRY_PROFILES: Record<CountryId, CountryProfile> = {
   usa: {
     id: 'usa',

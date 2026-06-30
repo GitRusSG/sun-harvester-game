@@ -194,6 +194,11 @@ export class SupplyChainSystem {
     let factories = [...state.infrastructure.factories];
     let totalMaterialsCrafted = 0;
 
+    // Apply crafting speed multiplier from upgrades.
+    let craftSpeedMultiplier = 1.0;
+    try { const cs = localStorage.getItem('shg_craft_speed'); if (cs) craftSpeedMultiplier = parseFloat(cs) || 1.0; } catch { /* */ }
+    const effectiveDelta = deltaTicks * craftSpeedMultiplier;
+
     // Process each crafting factory's orders
     for (let fi = 0; fi < factories.length; fi++) {
       const factory = factories[fi];
@@ -201,7 +206,7 @@ export class SupplyChainSystem {
 
       const completedOrders: number[] = [];
       const updatedOrders = factory.currentOrders.map((order, oi) => {
-        const newProgress = order.progress + deltaTicks;
+        const newProgress = order.progress + effectiveDelta;
 
         if (newProgress >= order.totalTime) {
           // Order complete

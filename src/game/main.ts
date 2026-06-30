@@ -23,13 +23,14 @@ import { SpaceSystem } from './systems/space-system.js';
 import { MarsSystem } from './systems/mars-system.js';
 import { DysonSystem } from './systems/dyson-system.js';
 import { EducationSystem } from './systems/education-system.js';
-import { IMMUNE_COUNTRIES } from './data/countries.js';
+import { IMMUNE_COUNTRIES, DEV_CONSOLE_COUNTRIES } from './data/countries.js';
 import {
   isInfiniteUnlocked,
   MAX_QUEUE_SIZE,
   MAX_BUILD_SPEED,
   MAX_KNOWLEDGE_SPEED,
   MAX_RESEARCH_SPEED,
+  MAX_CRAFT_SPEED,
   MAX_PROTEST_SUPPRESSION,
   MAX_MORALE_RETAINMENT,
   PAYOFF_PROTESTERS_BASE_COST,
@@ -107,6 +108,7 @@ function boot(): void {
   let timewarpUnlocked = false;
   let timewarpActive = false;
   let moraleRetainmentLevel = 0; // reduces morale decay per level
+  let craftSpeedMultiplier = 1.0;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
   try { const q = localStorage.getItem('shg_queue_max'); if (q) maxQueueSize = parseInt(q); } catch { /* */ }
   try { const s = localStorage.getItem('shg_build_speed'); if (s) buildSpeedMultiplier = parseFloat(s); } catch { /* */ }
@@ -118,6 +120,7 @@ function boot(): void {
   try { const tw = localStorage.getItem('shg_timewarp_unlocked'); if (tw) timewarpUnlocked = tw === '1'; } catch { /* */ }
   try { const ta = localStorage.getItem('shg_timewarp_active'); if (ta) timewarpActive = ta === '1'; } catch { /* */ }
   try { const mr = localStorage.getItem('shg_morale_retain'); if (mr) moraleRetainmentLevel = parseInt(mr); } catch { /* */ }
+  try { const cs = localStorage.getItem('shg_craft_speed'); if (cs) craftSpeedMultiplier = parseFloat(cs); } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
 
@@ -342,6 +345,7 @@ function boot(): void {
       timewarpUnlocked = false;
       timewarpActive = false;
       moraleRetainmentLevel = 0;
+      craftSpeedMultiplier = 1.0;
       buildQueue.length = 0;
       shell.setBuildQueue(buildQueue);
       shell.setMorale(morale);
@@ -427,13 +431,88 @@ function boot(): void {
       return;
     }
 
-    // ─── Russia Cheat (9B grant from dropdown) ──────────────────────────
+    // ─── Demolish Building ──────────────────────────────────────────────
+    if (action.type === 'demolish') {
+      const state = gameLoop.getState();
+      const building = action.payload.building as string;
+      const index = (action.payload.index as number) ?? 0;
+      let updated = state;
+      switch (building) {
+        case 'solar_panel': {
+          const panels = [...state.energy.solarPanels];
+          if (panels.length > index) { panels.splice(index, 1); updated = applyUpdate(state, { mutations: [{ path: 'energy.solarPanels', value: panels }] }); }
+          break;
+        }
+        case 'power_plant': {
+          const plants = [...state.energy.powerPlants];
+          if (plants.length > index) { plants.splice(index, 1); updated = applyUpdate(state, { mutations: [{ path: 'energy.powerPlants', value: plants }] }); }
+          break;
+        }
+        case 'mine': {
+          const mines = [...state.infrastructure.mines];
+          if (mines.length > index) { mines.splice(index, 1); updated = applyUpdate(state, { mutations: [{ path: 'infrastructure.mines', value: mines }] }); }
+          break;
+        }
+        case 'factory': {
+          const factories = [...state.infrastructure.factories];
+          if (factories.length > index) { factories.splice(index, 1); updated = applyUpdate(state, { mutations: [{ path: 'infrastructure.factories', value: factories }] }); }
+          break;
+        }
+        case 'weapons_factory': {
+          const wf = [...state.weapons.factories];
+          if (wf.length > index) { wf.splice(index, 1); updated = applyUpdate(state, { mutations: [{ path: 'weapons.factories', value: wf }] }); }
+          break;
+        }
+      }
+      gameLoop.setState(updated);
+      shell.notify(`🗑️ Demolished ${building.replace('_', ' ')}`, 'info');
+      shell.render(gameLoop.getState());
+      shell.refreshActivePanel();
+      return;
+    }
+
+    // ─── Build Relay Antenna on Mars ────────────────────────────────────
+    if (action.type === 'build_relay') {
+      const state = gameLoop.getState();
+      if (state.resources.currency < 50000) { shell.notify('Need $50,000!', 'error'); return; }
+      if ((state.materials.stockpiles.electronics ?? 0) < 100) { shell.notify('Need 100 electronics!', 'error'); return; }
+      const newStockpiles = { ...state.materials.stockpiles, electronics: (state.materials.stockpiles.electronics ?? 0) - 100 };
+      gameLoop.setState(applyUpdate(state, {
+        resources: { currency: state.resources.currency - 50000 },
+        materials: { stockpiles: newStockpiles },
+        mutations: [{ path: 'mars.relayBuilt', value: true }],
+      }));
+      shell.notify('📡 Relay Antenna built on Mars! You can now contact aliens.', 'success');
+      shell.render(gameLoop.getState());
+      shell.refreshActivePanel();
+      return;
+    }
+
+    // ─── Contact Aliens ─────────────────────────────────────────────────
+    if (action.type === 'contact_aliens') {
+      const state = gameLoop.getState();
+      if (!(state.mars as any).relayBuilt) { shell.notify('Build the Relay Antenna first!', 'error'); return; }
+      gameLoop.setState(applyUpdate(state, {
+        mutations: [
+          { path: 'alien.encountered', value: true },
+          { path: 'alien.relationsScore', value: (state.alien.relationsScore ?? 0) + 10 },
+        ],
+      }));
+      eventController.enqueue([{ id: `alien_signal_${Date.now()}`, type: 'alien_signal', payload: { source: 'mars_relay' }, timestamp: Date.now() }]);
+      eventController.dispatch();
+      shell.notify('👽 Signal sent! Alien response detected...', 'success');
+      shell.render(gameLoop.getState());
+      return;
+    }
+
+    // ─── Russia Cheat (grant from dropdown) ─────────────────────────────
     if (action.type === 'russia_cheat') {
       const state = gameLoop.getState();
-      if (state.country !== 'russia') return;
+      if (!DEV_CONSOLE_COUNTRIES.has(state.country)) return;
       const select = document.querySelector<HTMLSelectElement>('#russia-cheat-resource');
+      const amountInput = document.querySelector<HTMLInputElement>('#russia-cheat-amount');
       const resource = select?.value ?? 'currency';
-      const AMOUNT = 9_000_000_000;
+      const AMOUNT = Math.max(1, parseInt(amountInput?.value ?? '9000000000') || 9_000_000_000);
       let updated = state;
       if (resource === 'currency') {
         updated = applyUpdate(state, { resources: { currency: state.resources.currency + AMOUNT } });
@@ -563,6 +642,12 @@ function boot(): void {
           researchSpeedMultiplier = Math.min(MAX_RESEARCH_SPEED, researchSpeedMultiplier + 0.5);
           try { localStorage.setItem('shg_research_speed', researchSpeedMultiplier.toFixed(2)); } catch { /* */ }
           shell.notify(`🔬 Research speed ×${researchSpeedMultiplier.toFixed(1)}!`, 'success');
+          break;
+        case 'craft_speed':
+          if (craftSpeedMultiplier >= MAX_CRAFT_SPEED) { shell.notify('Craft speed maxed out!', 'warning'); break; }
+          craftSpeedMultiplier = Math.min(MAX_CRAFT_SPEED, craftSpeedMultiplier + 0.5);
+          try { localStorage.setItem('shg_craft_speed', craftSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          shell.notify(`⚒️ Craft speed ×${craftSpeedMultiplier.toFixed(1)}!`, 'success');
           break;
         case 'protest_suppress':
           if (protestSuppressionLevel >= MAX_PROTEST_SUPPRESSION) { shell.notify('Protest suppression maxed out!', 'warning'); break; }
