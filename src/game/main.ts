@@ -244,43 +244,52 @@ function boot(): void {
     if (action.type === 'attack_country') {
       const state = gameLoop.getState();
       const targetCountry = action.payload.country as CountryId;
-      const garrison = (action.payload.garrison as number) ?? 10;
+      const baseGarrison = (action.payload.garrison as number) ?? 10;
+      // Garrisons are far tougher now — defenders dig in (×4) and get a home
+      // advantage, so conquest requires a real military buildup.
+      const garrison = baseGarrison * 4;
       const attackPower = state.weapons.militaryPower;
 
       if (attackPower < 10) { shell.notify('Need at least 10 military power!', 'error'); return; }
 
-      // Luck factor: random 0.5–1.5 for each side
-      const attackLuck = 0.5 + Math.random();
-      const defenseLuck = 0.5 + Math.random();
+      // Luck factor: attacker 0.6–1.2, defender 0.8–1.5 (home advantage).
+      const attackLuck = 0.6 + Math.random() * 0.6;
+      const defenseLuck = 0.8 + Math.random() * 0.7;
       const attackStrength = attackPower * attackLuck;
       const defenseStrength = garrison * defenseLuck;
+      const won = attackStrength > defenseStrength;
 
-      if (attackStrength > defenseStrength) {
-        // Victory — take the country
-        const influence = { ...state.political.influence, [targetCountry]: 100 };
-        const installed = [...state.political.installedPoliticians];
-        if (!installed.includes(targetCountry)) installed.push(targetCountry);
-        const updated = applyUpdate(state, {
-          mutations: [
-            { path: 'political.influence', value: influence },
-            { path: 'political.installedPoliticians', value: installed },
-            { path: 'weapons.militaryPower', value: Math.max(0, attackPower - garrison * 0.3) },
-          ],
-        });
-        gameLoop.setState(updated);
-        shell.notify(`⚔️ Victory! You conquered ${targetCountry.replace('_', ' ')}! (${attackStrength.toFixed(0)} vs ${defenseStrength.toFixed(0)})`, 'success');
-      } else {
-        // Defeat — lose military power
-        const loss = Math.min(attackPower, garrison * 0.5);
-        const updated = applyUpdate(state, {
-          mutations: [
-            { path: 'weapons.militaryPower', value: Math.max(0, attackPower - loss) },
-          ],
-        });
-        gameLoop.setState(updated);
-        shell.notify(`💀 Defeat! Lost ${loss.toFixed(0)} military power. (${attackStrength.toFixed(0)} vs ${defenseStrength.toFixed(0)})`, 'error');
-      }
-      shell.render(gameLoop.getState());
+      // Attacking always costs you troops, win or lose.
+      const baseLoss = garrison * 0.4;
+
+      const playerName = state.countryProfile?.name ?? 'You';
+      const defName = targetCountry.replace('_', ' ');
+
+      // Play the battle animation, then apply the outcome.
+      void shell.showBattle(playerName, defName, won).then(() => {
+        const s = gameLoop!.getState();
+        if (won) {
+          const influence = { ...s.political.influence, [targetCountry]: 100 };
+          const installed = [...s.political.installedPoliticians];
+          if (!installed.includes(targetCountry)) installed.push(targetCountry);
+          gameLoop!.setState(applyUpdate(s, {
+            mutations: [
+              { path: 'political.influence', value: influence },
+              { path: 'political.installedPoliticians', value: installed },
+              { path: 'weapons.militaryPower', value: Math.max(0, s.weapons.militaryPower - baseLoss) },
+            ],
+          }));
+          shell.celebrate();
+          shell.notify(`⚔️ Victory! You conquered ${defName}! (${attackStrength.toFixed(0)} vs ${defenseStrength.toFixed(0)}) — lost ${baseLoss.toFixed(0)} power`, 'success');
+        } else {
+          const loss = Math.min(s.weapons.militaryPower, garrison * 0.7);
+          gameLoop!.setState(applyUpdate(s, {
+            mutations: [{ path: 'weapons.militaryPower', value: Math.max(0, s.weapons.militaryPower - loss) }],
+          }));
+          shell.notify(`💀 Defeat! Their garrison held. Lost ${loss.toFixed(0)} military power. (${attackStrength.toFixed(0)} vs ${defenseStrength.toFixed(0)})`, 'error');
+        }
+        shell.render(gameLoop!.getState());
+      });
       return;
     }
 

@@ -109,6 +109,52 @@ export class GameShell {
     setTimeout(() => layer.remove(), 4500);
   }
 
+  /**
+   * Plays a short battle animation: attacker units (left) clash with
+   * defender units (right). `win` decides which side falls at the end.
+   * Returns a promise that resolves when the animation finishes (~2.6s).
+   */
+  showBattle(attackerName: string, defenderName: string, win: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'gs-battle-overlay';
+      const soldiers = (side: 'atk' | 'def', emoji: string, n: number) =>
+        Array.from({ length: n })
+          .map(
+            (_, i) =>
+              `<span class="gs-soldier gs-soldier-${side}" style="animation-delay:${i * 0.08}s">${emoji}</span>`,
+          )
+          .join('');
+      overlay.innerHTML = `
+        <div class="gs-battle-stage">
+          <div class="gs-battle-header">⚔️ ${attackerName} vs ${defenderName}</div>
+          <div class="gs-battle-field">
+            <div class="gs-battle-side gs-battle-atk">${soldiers('atk', '🪖', 6)}</div>
+            <div class="gs-battle-vs">💥</div>
+            <div class="gs-battle-side gs-battle-def">${soldiers('def', '🛡️', 6)}</div>
+          </div>
+          <div class="gs-battle-result"></div>
+        </div>
+      `;
+      this.container.appendChild(overlay);
+
+      setTimeout(() => {
+        const losers = overlay.querySelectorAll(win ? '.gs-soldier-def' : '.gs-soldier-atk');
+        losers.forEach((el) => el.classList.add('gs-soldier-fall'));
+        const result = overlay.querySelector('.gs-battle-result');
+        if (result) {
+          result.textContent = win ? '🏆 Victory!' : '💀 Defeat!';
+          (result as HTMLElement).style.color = win ? '#4ade80' : '#f87171';
+        }
+      }, 1400);
+
+      setTimeout(() => {
+        overlay.classList.add('gs-battle-out');
+        setTimeout(() => { overlay.remove(); resolve(); }, 400);
+      }, 2400);
+    });
+  }
+
   /** Update HUD numbers in-place (no DOM rebuild). */
   render(state: GameState): void {
     this.state = state;
@@ -517,7 +563,9 @@ export class GameShell {
    */
   private renderPlacementGrid(state: GameState): string {
     const COLS = 8;
-    const ROWS = 6;
+    // Each controlled country adds 2 rows of build space (more slots after capturing).
+    const captured = state.political.installedPoliticians.length;
+    const ROWS = 6 + captured * 2;
     const cells: string[] = new Array(COLS * ROWS).fill('⬛');
 
     // Fill cells with buildings.
@@ -549,7 +597,7 @@ export class GameShell {
       }
     }
     gridHtml += '</div>';
-    gridHtml += `<p class="gs-muted">${idx}/${COLS * ROWS} slots used</p>`;
+    gridHtml += `<p class="gs-muted">${idx}/${COLS * ROWS} slots used${captured > 0 ? ` · +${captured * 16} slots from ${captured} captured ${captured === 1 ? 'country' : 'countries'}` : ''}</p>`;
     return gridHtml;
   }
 
@@ -582,6 +630,8 @@ export class GameShell {
       }).join(', ');
 
       const canCraft = recipe.inputs.every(i => (state.materials.stockpiles[i.material] ?? 0) >= i.quantity);
+      const can5 = recipe.inputs.every(i => (state.materials.stockpiles[i.material] ?? 0) >= i.quantity * 5);
+      const can10 = recipe.inputs.every(i => (state.materials.stockpiles[i.material] ?? 0) >= i.quantity * 10);
       const outputs = recipe.outputs.map(o => `${o.quantity} ${o.material}`).join(', ');
 
       recipesHtml += `
@@ -589,7 +639,11 @@ export class GameShell {
           <strong>${recipe.name}</strong> (${recipe.craftTime}s)<br>
           <small>Needs: ${inputs}</small><br>
           <small>Makes: ${outputs}</small><br>
-          ${btn(`Craft ${recipe.name}`, { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 1 } }, !canCraft)}
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            ${btn('×1', { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 1 } }, !canCraft)}
+            ${btn('×5', { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 5 } }, !can5)}
+            ${btn('×10', { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 10 } }, !can10)}
+          </div>
         </div>
       `;
     }
@@ -734,7 +788,7 @@ export class GameShell {
     const btn = (label: string, action: ActionPayload, disabled = false) =>
       `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}</button>`;
 
-    const garrison = profile.startingMilitary ?? 10;
+    const garrison = (profile.startingMilitary ?? 10) * 4;
     const canAttack = !isControlled && state.weapons.militaryPower >= 10;
 
     this.panelTitle.textContent = `🎯 ${profile.name}`;
@@ -748,7 +802,7 @@ export class GameShell {
       ${!isControlled ? `
         <h3 class="gs-section-title">⚔️ Military Action</h3>
         <div class="gs-action-list">
-          ${btn(`⚔️ Attack ${profile.name} (luck + quantity)`, { type: 'attack_country', payload: { country: id, garrison } }, !canAttack)}
+          ${btn(`⚔️ Attack ${profile.name} (luck + quantity)`, { type: 'attack_country', payload: { country: id, garrison: profile.startingMilitary ?? 10 } }, !canAttack)}
         </div>
         <p class="gs-muted">${!canAttack ? 'Need at least 10 military power to attack.' : 'Outcome based on your power vs their garrison × luck.'}</p>
       ` : '<p class="gs-positive">✓ This country is under your control.</p>'}
