@@ -324,6 +324,16 @@ export class GameShell {
   // ─── Event Delegation ─────────────────────────────────────────────────
 
   private handleClick(e: Event): void {
+    // Info badge click — show the tooltip text as a toast and stop, so it
+    // doesn't trigger the parent build button's action.
+    const infoBadge = (e.target as HTMLElement).closest<HTMLElement>('.gs-info-badge');
+    if (infoBadge) {
+      e.stopPropagation();
+      const info = infoBadge.getAttribute('title') ?? infoBadge.getAttribute('data-info') ?? '';
+      if (info) this.notify(`ℹ️ ${info}`, 'info');
+      return;
+    }
+
     const target = (e.target as HTMLElement).closest<HTMLElement>('[data-open],[data-action],[data-nav]');
     if (!target) {
       // Close button.

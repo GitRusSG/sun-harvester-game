@@ -933,3 +933,12 @@ path.gs-svgmap-country[data-status="hostile"] { fill: #ef4444; }
 .gs-action-btn, .gs-hud-btn, .gs-stat, .gs-country-card, .gs-quiz-option {
   will-change: transform;
 }
+
+
+/* Allow info toasts to wrap and stay readable */
+.gs-toast {
+  max-width: min(440px, 90vw);
+  white-space: normal;
+  line-height: 1.4;
+  text-align: center;
+}
