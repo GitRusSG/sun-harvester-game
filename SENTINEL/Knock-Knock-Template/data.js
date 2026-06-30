@@ -1,5 +1,8 @@
 // Your code here
-const data = {}
+const data = {
+    "SABATON":"CAROLOUSREX"
+    ,"BLOOD ANGELS":"DABOIS"
+}
 
 
 module.exports = data;

@@ -27,6 +27,9 @@ Sun Harvester is an incremental management game where players progress from prim
 - **Weapons_System**: The subsystem for manufacturing and deploying military assets for defense and offense
 - **Political_System**: The subsystem managing political influence, politician placement, and country control
 - **Country_Profile**: The starting configuration defining a country's unique buffs, resources, and starting conditions
+- **Strategic_World_Map**: The full-screen geographic view accessible by clicking Earth in the 3D celestial view, showing all countries with color-coded ownership
+- **Building_Grid**: An 8x6 cell grid within each owned country where the player can place and rearrange buildings via drag-and-drop
+- **Combat_Engine**: The subsystem that resolves military engagements using a luck-plus-quantity formula to determine combat outcomes
 
 ## Requirements
 
@@ -338,3 +341,72 @@ Sun Harvester is an incremental management game where players progress from prim
 3. WHEN global resource pooling is active, THE Game_Engine SHALL reduce all space launch costs by 50% due to global cooperation
 4. THE Game_Engine SHALL allow progression to space eras through either military dominance over the UN OR political control of a majority of countries
 5. THE UI_System SHALL display a world map showing controlled countries, influence levels, and contested regions
+
+### Requirement 25: Strategic World Map via Earth Click
+
+**User Story:** As a player, I want to open a full strategic world map when clicking Earth in the 3D celestial view, so that I can manage my territories, buildings, and military operations from a unified geographic interface.
+
+#### Acceptance Criteria
+
+1. WHEN the player clicks Earth in the 3D celestial view, THE UI_System SHALL display a full-screen strategic world map overlay showing all 10 countries with color-coded ownership status
+2. THE UI_System SHALL render player-owned countries in green, hostile countries in red, and politically-influenced countries (influence above 30%) in yellow
+3. WHEN the player clicks a green (owned/controlled) country on the strategic world map, THE UI_System SHALL open the building grid view for that country
+4. WHEN the player clicks a red or yellow country on the strategic world map, THE UI_System SHALL display an attack option prompting the player to select a source country for the assault
+5. THE UI_System SHALL display each country's name, ownership status, military garrison size, and building count on the strategic world map
+6. THE Strategic_World_Map SHALL update country colors in real time as political influence changes or combat outcomes alter ownership
+
+### Requirement 26: Drag-and-Drop Building Grid
+
+**User Story:** As a player, I want to place buildings in a grid layout on my owned countries using drag-and-drop, so that I can visually organize my infrastructure and make strategic placement decisions.
+
+#### Acceptance Criteria
+
+1. WHEN the player opens a green (owned) country from the strategic world map, THE UI_System SHALL display an 8x6 building grid with empty and occupied cells
+2. THE UI_System SHALL display a building palette containing available building types (Power Plants, Solar Panels, Mines, Factories, Research Labs, Weapons Factories, Distribution Networks)
+3. WHEN the player drags a building from the palette onto an empty grid cell, THE UI_System SHALL place the building in that cell and deduct the building cost from the player's currency
+4. IF the player drags a building onto an occupied grid cell, THEN THE UI_System SHALL reject the placement and display a visual indicator that the cell is occupied
+5. IF the player has insufficient currency to place a building, THEN THE UI_System SHALL disable dragging for that building type and display the required cost
+6. WHEN the player drops a building on a valid empty cell, THE Game_Engine SHALL register the building in the country's infrastructure and begin its production contribution
+7. THE UI_System SHALL allow the player to drag existing buildings from one cell to another within the same country grid to reorganize placement
+8. THE Building_Grid SHALL enforce a maximum capacity of 48 buildings per country (8 columns × 6 rows)
+9. WHEN a building is placed, THE UI_System SHALL display a tooltip showing the building's production output, maintenance cost, and any location-specific bonuses
+
+### Requirement 27: Country-Specific Building Bonuses
+
+**User Story:** As a player, I want each country to provide unique bonuses to buildings placed there, so that strategic placement across my territories matters.
+
+#### Acceptance Criteria
+
+1. THE Game_Engine SHALL apply the Country_Profile buffs to all buildings placed in that country's grid (e.g., buildings in Germany receive engineering_efficiency bonus, buildings in China receive manufacturing_speed bonus)
+2. WHEN a building is placed in a controlled (non-home) country, THE Resource_Manager SHALL apply a 20% efficiency reduction compared to buildings in the player's home country
+3. THE UI_System SHALL display active country bonuses on the building grid header so the player can make informed placement decisions
+4. WHEN a politician is removed via coup in a controlled country, THE Game_Engine SHALL disable all buildings in that country's grid until control is re-established
+
+### Requirement 28: Combat System — Attack Initiation
+
+**User Story:** As a player, I want to attack red or yellow countries by selecting one of my green countries as the attack source, so that I can expand my territory through military force.
+
+#### Acceptance Criteria
+
+1. WHEN the player selects a red or yellow country to attack on the strategic world map, THE UI_System SHALL prompt the player to select a source country from their controlled green countries
+2. THE UI_System SHALL display the attacking force strength (military units from source country) and the defending force strength (estimated enemy garrison) before confirming the attack
+3. WHEN the player confirms the attack, THE Combat_Engine SHALL calculate the combat outcome using the luck-plus-quantity formula
+4. IF the player cancels the attack, THEN THE UI_System SHALL return to the strategic world map without any resource expenditure
+5. THE Combat_Engine SHALL require the source country to have at least 10 military units to initiate an attack
+6. WHEN an attack is launched, THE Weapons_System SHALL deduct military units from the source country's garrison based on the force committed
+
+### Requirement 29: Combat Resolution — Luck Plus Quantity
+
+**User Story:** As a player, I want combat outcomes to depend on both army size and random luck, so that battles feel uncertain and strategic army building matters.
+
+#### Acceptance Criteria
+
+1. THE Combat_Engine SHALL calculate attack strength as: (attacker_military_units × random_factor) where random_factor is a uniformly distributed value between 0.5 and 1.5
+2. THE Combat_Engine SHALL calculate defense strength as: (defender_garrison × random_factor) where random_factor is a uniformly distributed value between 0.5 and 1.5
+3. WHEN attack strength exceeds defense strength, THE Combat_Engine SHALL declare the attacker victorious and transfer country ownership to the player
+4. WHEN defense strength exceeds or equals attack strength, THE Combat_Engine SHALL declare the defender victorious and the attacking country loses the committed units
+5. WHEN the attacker wins, THE Political_System SHALL set the conquered country's influence to 100% and install a politician automatically
+6. WHEN the attacker loses, THE UI_System SHALL display a defeat notification showing units lost and remaining garrison
+7. THE Combat_Engine SHALL apply a 10% bonus to attack strength for each adjacent controlled country the player owns (geographic advantage)
+8. AFTER each combat resolution, THE Combat_Engine SHALL impose a cooldown of 30 seconds before the same source country can launch another attack
+9. THE UI_System SHALL display an animated combat resolution sequence showing the dice roll, force comparison, and outcome

@@ -847,10 +847,12 @@ export class GameShell {
           <strong>${recipe.name}</strong> (${recipe.craftTime}s)<br>
           <small>Needs: ${inputs}</small><br>
           <small>Makes: ${outputs}</small><br>
-          <div style="display:flex;gap:6px;margin-top:6px;">
+          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">
             ${btn('×1', { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 1 } }, !canCraft)}
             ${btn('×5', { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 5 } }, !can5)}
             ${btn('×10', { type: 'queue_craft', payload: { recipeId: recipe.id, quantity: 10 } }, !can10)}
+            <input type="number" min="1" max="999" value="25" class="gs-craft-input" data-recipe="${recipe.id}" style="width:56px;padding:6px;border-radius:6px;border:1px solid rgba(120,160,220,0.3);background:#0d1424;color:#f0f9ff;font:inherit;font-size:13px;text-align:center;" />
+            <button class="gs-action-btn" data-action='${JSON.stringify({ type: 'queue_craft_custom', payload: { recipeId: recipe.id } })}' ${!canCraft ? 'disabled' : ''} style="padding:6px 10px;">Craft ×?</button>
           </div>
         </div>
       `;

@@ -384,6 +384,29 @@ function boot(): void {
       return;
     }
 
+    // ─── Custom quantity craft (reads input from DOM) ──────────────────
+    if (action.type === 'queue_craft_custom') {
+      const recipeId = action.payload.recipeId as string;
+      const input = document.querySelector<HTMLInputElement>(`.gs-craft-input[data-recipe="${recipeId}"]`);
+      const qty = Math.max(1, Math.min(999, parseInt(input?.value ?? '1') || 1));
+      // Redirect to the standard queue_craft flow.
+      shell.setActionHandler && void 0; // no-op, just dispatching below
+      const state = gameLoop.getState();
+      for (const system of gameSystems) {
+        if (system.canPerform(state, { type: 'queue_craft', payload: { recipeId, quantity: qty } })) {
+          const update = system.perform(state, { type: 'queue_craft', payload: { recipeId, quantity: qty } });
+          if (update && (update.mutations || update.resources || update.materials || update.events)) {
+            gameLoop.setState(applyUpdate(state, update));
+            if (update.events) { eventController.enqueue(update.events); eventController.dispatch(); }
+            shell.notify(`⚒️ Queued ×${qty} ${recipeId}`, 'success');
+            shell.render(gameLoop.getState());
+            break;
+          }
+        }
+      }
+      return;
+    }
+
     // ─── Auto-fix for Mars/Space unlock on existing saves ────────────────
     if (action.type === 'fix_mars_unlock') {
       const state = gameLoop.getState();
