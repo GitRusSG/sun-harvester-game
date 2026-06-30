@@ -272,6 +272,7 @@ export class GameShell {
       <span class="gs-hud-item" data-hud="military">🔫 0</span>
       <button class="gs-hud-btn" data-open="dashboard">📊 Dashboard</button>
       <button class="gs-hud-btn" data-open="build">🔨 Build</button>
+      <button class="gs-hud-btn" data-open="upgrades">⬆️ Upgrades</button>
       <button class="gs-hud-btn" data-open="crafting">⚒️ Craft</button>
       <button class="gs-hud-btn" data-open="research">🔬 Research</button>
       <button class="gs-hud-btn" data-open="settings">⚙️ Settings</button>
@@ -356,16 +357,15 @@ export class GameShell {
 
     // Game action.
     if (target.dataset.action) {
+      e.stopPropagation();
       const actionData = target.dataset.action;
       try {
         const action = JSON.parse(actionData) as ActionPayload;
         this.onAction(action);
-        // Re-render panel after action.
-        if (this.activePanel && this.state) {
-          setTimeout(() => {
-            if (this.activePanel && this.state) this.renderPanel(this.activePanel, this.state);
-          }, 100);
-        }
+        // Defer the panel rebuild to the next frame so the current click event
+        // fully finishes first — rebuilding mid-event could re-target the new
+        // button and re-fire the action (rifles firing repeatedly).
+        requestAnimationFrame(() => this.refreshActivePanel());
       } catch { /* ignore parse errors */ }
       return;
     }
@@ -430,6 +430,7 @@ export class GameShell {
     switch (id) {
       case 'dashboard': this.renderDashboard(state); break;
       case 'build': this.renderBuild(state); break;
+      case 'upgrades': this.renderUpgradesPanel(state); break;
       case 'crafting': this.renderCraftingPanel(state); break;
       case 'research': this.renderResearch(state); break;
       case 'settings': this.renderSettingsPanel(state); break;
@@ -567,6 +568,51 @@ export class GameShell {
       <button class="gs-action-btn" data-action='${JSON.stringify({ type: 'advance_era', payload: {} })}' ${canAfford ? '' : 'disabled'}>
         🚀 Advance to ${nextEra.replace('_', ' ')} Era
       </button>
+    `;
+  }
+
+  /**
+   * Upgrades panel — repeatable purchasable improvements with scaling costs.
+   * Each is a direct, immediate effect on state.
+   */
+  private renderUpgradesPanel(state: GameState): void {
+    this.panelTitle.textContent = '⬆️ Upgrades';
+    const cur = state.resources.currency;
+    const btn = (label: string, action: ActionPayload, cost: number, info: string) => {
+      const infoIcon = `<span class="gs-info-badge" title="${info.replace(/"/g, '&quot;')}">ⓘ</span>`;
+      return `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${cur < cost ? 'disabled' : ''}>${label}${infoIcon}</button>`;
+    };
+
+    // Scaling costs based on current values, so upgrades get pricier.
+    const storageCost = Math.floor(800 + state.energy.maxStorage * 1.2);
+    const militaryCost = Math.floor(1000 + state.weapons.militaryPower * 30);
+    const knowledgeCost = 1500;
+    const festivalCost = 2000;
+
+    this.panelContent.innerHTML = `
+      <p class="gs-muted">Permanent, repeatable upgrades. Costs scale as you grow.</p>
+
+      <h3 class="gs-section-title">⚡ Energy</h3>
+      <div class="gs-action-list">
+        ${btn(`🔋 Bigger Grid (+500 storage) — $${formatNumber(storageCost)}`, { type: 'upgrade_buy', payload: { kind: 'storage', cost: storageCost } }, storageCost, 'Permanently adds 500 max energy storage. Helps bank energy for era advancement.')}
+        ${btn(`☀️ Panel Efficiency (+10% solar) — $3000`, { type: 'upgrade_buy', payload: { kind: 'solar_eff', cost: 3000 } }, 3000, 'Boosts all solar panel output by 10% (stacks).')}
+      </div>
+
+      <h3 class="gs-section-title">⚔️ Military</h3>
+      <div class="gs-action-list">
+        ${btn(`🎖️ Military Drills (+20 power) — $${formatNumber(militaryCost)}`, { type: 'upgrade_buy', payload: { kind: 'military', cost: militaryCost } }, militaryCost, 'Permanently raises military power by 20. Stacks each purchase.')}
+      </div>
+
+      <h3 class="gs-section-title">🔬 Economy & Knowledge</h3>
+      <div class="gs-action-list">
+        ${btn(`📚 Knowledge Grant (+500 KP) — $${formatNumber(knowledgeCost)}`, { type: 'upgrade_buy', payload: { kind: 'knowledge', cost: knowledgeCost } }, knowledgeCost, 'Instantly converts currency into 500 knowledge points.')}
+      </div>
+
+      <h3 class="gs-section-title">🎉 Morale</h3>
+      <div class="gs-action-list">
+        ${btn(`🎉 Public Festival (+20 morale) — $${formatNumber(festivalCost)}`, { type: 'morale_festival', payload: { cost: festivalCost } }, festivalCost, 'Throw a national festival for an instant +20 morale boost.')}
+      </div>
+      <p class="gs-muted">💡 Morale also rises with high public approval (Education Campaigns) and positive net income.</p>
     `;
   }
 

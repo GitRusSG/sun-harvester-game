@@ -337,12 +337,61 @@ function boot(): void {
       return;
     }
 
+    // ─── Upgrades ───────────────────────────────────────────────────────
+    if (action.type === 'upgrade_buy') {
+      const state = gameLoop.getState();
+      const kind = action.payload.kind as string;
+      const cost = (action.payload.cost as number) ?? 0;
+      if (state.resources.currency < cost) { shell.notify('Not enough currency!', 'error'); return; }
+      let upd = applyUpdate(state, { resources: { currency: state.resources.currency - cost } });
+      switch (kind) {
+        case 'storage':
+          upd = applyUpdate(upd, { mutations: [{ path: 'energy.maxStorage', value: upd.energy.maxStorage + 500 }] });
+          shell.notify('🔋 Grid expanded! +500 storage', 'success');
+          break;
+        case 'solar_eff': {
+          const panels = upd.energy.solarPanels.map((p) => ({ ...p, efficiency: p.efficiency * 1.1 }));
+          upd = applyUpdate(upd, { mutations: [{ path: 'energy.solarPanels', value: panels }] });
+          shell.notify('☀️ Solar efficiency +10%', 'success');
+          break;
+        }
+        case 'military':
+          upd = applyUpdate(upd, { mutations: [{ path: 'weapons.militaryPower', value: upd.weapons.militaryPower + 20 }] });
+          shell.notify('🎖️ Military power +20', 'success');
+          break;
+        case 'knowledge':
+          upd = applyUpdate(upd, { resources: { knowledgePoints: upd.resources.knowledgePoints + 500 } });
+          shell.notify('📚 +500 knowledge points', 'success');
+          break;
+      }
+      gameLoop.setState(upd);
+      shell.render(gameLoop.getState());
+      shell.refreshActivePanel();
+      return;
+    }
+
+    // ─── Morale Festival ────────────────────────────────────────────────
+    if (action.type === 'morale_festival') {
+      const state = gameLoop.getState();
+      const cost = (action.payload.cost as number) ?? 2000;
+      if (state.resources.currency < cost) { shell.notify('Not enough currency!', 'error'); return; }
+      gameLoop.setState(applyUpdate(state, { resources: { currency: state.resources.currency - cost } }));
+      morale = Math.min(100, morale + 20);
+      try { localStorage.setItem('shg_morale', morale.toFixed(1)); } catch { /* */ }
+      shell.setMorale(morale);
+      shell.celebrate();
+      shell.notify('🎉 Festival! Morale +20', 'success');
+      shell.render(gameLoop.getState());
+      shell.refreshActivePanel();
+      return;
+    }
+
     // Buildable actions go through build queue.
     if (action.type in BUILD_TIMES) {
       const state = gameLoop.getState();
       const cost = (action.payload.cost as number) ?? 0;
       if (cost > 0 && state.resources.currency < cost) { shell.notify('Not enough currency!', 'error'); return; }
-      if (buildQueue.length >= 3) { shell.notify('Queue full (max 3)', 'warning'); return; }
+      if (buildQueue.length >= 6) { shell.notify('Queue full (max 6)', 'warning'); return; }
       if (cost > 0) gameLoop.setState(applyUpdate(state, { resources: { currency: state.resources.currency - cost } }));
       buildQueue.push({ action, label: getBuildLabel(action.type), ticksRemaining: BUILD_TIMES[action.type], totalTicks: BUILD_TIMES[action.type] });
       shell.notify(`Building ${getBuildLabel(action.type)} (${BUILD_TIMES[action.type]}s)`, 'info');
