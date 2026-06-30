@@ -158,12 +158,36 @@ function boot(): void {
     });
     const advanced = advanceEra(updated);
     loop.setState(advanced);
-    eventController.enqueue([{ id: `era_${Date.now()}`, type: 'era_unlock', payload: { era: advanced.currentEra }, timestamp: Date.now() }]);
+
+    // Auto-unlock systems tied to specific eras.
+    let postAdvance = advanced;
+    if (postAdvance.currentEra === 'mars_colonization' && !postAdvance.mars.unlocked) {
+      postAdvance = applyUpdate(postAdvance, { mutations: [
+        { path: 'mars.unlocked', value: true },
+        { path: 'mars.baseLevel', value: 1 },
+      ] });
+      loop.setState(postAdvance);
+    }
+    if (postAdvance.currentEra === 'space_mining' && !postAdvance.space.unlocked) {
+      postAdvance = applyUpdate(postAdvance, { mutations: [
+        { path: 'space.unlocked', value: true },
+        { path: 'space.maxTerritories', value: 3 },
+      ] });
+      loop.setState(postAdvance);
+    }
+    if (postAdvance.currentEra === 'dyson_ring' && !postAdvance.dyson.unlocked) {
+      postAdvance = applyUpdate(postAdvance, { mutations: [
+        { path: 'dyson.unlocked', value: true },
+      ] });
+      loop.setState(postAdvance);
+    }
+
+    eventController.enqueue([{ id: `era_${Date.now()}`, type: 'era_unlock', payload: { era: postAdvance.currentEra }, timestamp: Date.now() }]);
     eventController.dispatch();
     shell.celebrate();
-    shell.notify(`🎉 Advanced to the ${advanced.currentEra.replace('_', ' ')} era!`, 'success');
+    shell.notify(`🎉 Advanced to the ${postAdvance.currentEra.replace('_', ' ')} era!`, 'success');
     // Force an immediate HUD + panel refresh so the era label updates at once.
-    shell.render(advanced);
+    shell.render(postAdvance);
     shell.refreshActivePanel();
   }
 
@@ -357,6 +381,18 @@ function boot(): void {
       gameLoop.setState(updated);
       shell.notify('🔫 Produced rifles! +1 military power', 'success');
       shell.render(gameLoop.getState());
+      return;
+    }
+
+    // ─── Auto-fix for Mars/Space unlock on existing saves ────────────────
+    if (action.type === 'fix_mars_unlock') {
+      const state = gameLoop.getState();
+      if (!state.mars.unlocked) {
+        gameLoop.setState(applyUpdate(state, { mutations: [
+          { path: 'mars.unlocked', value: true },
+          { path: 'mars.baseLevel', value: 1 },
+        ] }));
+      }
       return;
     }
 

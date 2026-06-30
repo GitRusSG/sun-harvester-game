@@ -1050,12 +1050,24 @@ export class GameShell {
   private renderMarsPanel(state: GameState): void {
     this.panelTitle.textContent = '🔴 Mars';
     const mars = state.mars;
-    this.panelContent.innerHTML = mars.unlocked
+    const eraIdx = ERA_ORDER.indexOf(state.currentEra);
+    const marsEraIdx = ERA_ORDER.indexOf('mars_colonization');
+    const shouldBeUnlocked = eraIdx >= marsEraIdx;
+
+    // Auto-fix for saves where mars wasn't unlocked on era advance.
+    if (shouldBeUnlocked && !mars.unlocked) {
+      this.onAction({ type: 'fix_mars_unlock', payload: {} });
+    }
+
+    this.panelContent.innerHTML = (mars.unlocked || shouldBeUnlocked)
       ? `<div class="gs-stat-grid">
-          <div class="gs-stat"><span class="gs-stat-label">Base Level</span><span class="gs-stat-value">${mars.baseLevel}</span></div>
+          <div class="gs-stat"><span class="gs-stat-label">Base Level</span><span class="gs-stat-value">${mars.baseLevel || 1}</span></div>
           <div class="gs-stat"><span class="gs-stat-label">Regolith Iron</span><span class="gs-stat-value">${formatNumber(mars.resources.regolith_iron ?? 0)}</span></div>
           <div class="gs-stat"><span class="gs-stat-label">Martian Ice</span><span class="gs-stat-value">${formatNumber(mars.resources.martian_ice ?? 0)}</span></div>
-        </div>`
+          <div class="gs-stat"><span class="gs-stat-label">CO2 Fuel</span><span class="gs-stat-value">${formatNumber(mars.resources.co2 ?? 0)}</span></div>
+          <div class="gs-stat"><span class="gs-stat-label">Launch Cost Reduction</span><span class="gs-stat-value">${((1 - (mars.launchCostReduction ?? 1)) * 100).toFixed(0)}%</span></div>
+        </div>
+        <p class="gs-muted">Mars produces unique resources each tick. Lower gravity reduces orbital launch costs.</p>`
       : `<p class="gs-muted">Mars not unlocked. Reach the Mars Colonization Era.</p>`;
   }
 
