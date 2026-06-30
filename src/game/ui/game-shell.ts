@@ -99,6 +99,39 @@ export class GameShell {
     if (this.activePanel) {
       this.renderPanel(this.activePanel, state);
     }
+    // Show a pending quiz modal if one exists and isn't already showing.
+    this.syncQuizModal(state);
+  }
+
+  /** Shows or hides the quiz modal based on the pending quiz in state. */
+  private syncQuizModal(state: GameState): void {
+    const quiz = state.education?.pendingQuiz;
+    const existing = this.container.querySelector('.gs-quiz-overlay');
+    if (!quiz) {
+      existing?.remove();
+      return;
+    }
+    // Already showing this quiz — leave it.
+    if (existing && existing.getAttribute('data-quiz-id') === quiz.id) return;
+    existing?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'gs-quiz-overlay';
+    overlay.setAttribute('data-quiz-id', quiz.id);
+    const options = quiz.options
+      .map(
+        (opt, i) =>
+          `<button class="gs-quiz-option" data-action='${JSON.stringify({ type: 'answer_quiz', payload: { quizId: quiz.id, answerIndex: i } })}'>${opt}</button>`,
+      )
+      .join('');
+    overlay.innerHTML = `
+      <div class="gs-quiz-card">
+        <div class="gs-quiz-badge">🎓 Knowledge Quiz · +${quiz.rewardKnowledgePoints} pts</div>
+        <h2 class="gs-quiz-question">${quiz.question}</h2>
+        <div class="gs-quiz-options">${options}</div>
+      </div>
+    `;
+    this.container.appendChild(overlay);
   }
 
   showCountrySelection(onSelect: (country: CountryId) => void): void {

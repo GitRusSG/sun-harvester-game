@@ -79,6 +79,7 @@ function boot(): void {
 
   let gameLoop: GameLoop | null = null;
   let morale = 75;
+  let quizTickCounter = 0;
   try { const m = localStorage.getItem('shg_morale'); if (m) morale = parseFloat(m); } catch { /* */ }
 
   // ─── Build Queue ────────────────────────────────────────────────────────
@@ -185,6 +186,15 @@ function boot(): void {
   // ─── Event Notifications ────────────────────────────────────────────────
 
   eventController.subscribe((event) => {
+    // Quiz result feedback.
+    if (event.type === 'quiz' && event.payload.subType === 'quiz_result') {
+      if (event.payload.correct) {
+        shell.notify(`✅ Correct! +${event.payload.reward} knowledge points`, 'success');
+      } else {
+        shell.notify(`❌ Wrong. ${event.payload.explanation ?? ''}`, 'error');
+      }
+      return;
+    }
     const msgs: Record<string, string> = {
       era_unlock: `New era: ${event.payload.era}`,
       research_complete: `Research done: ${event.payload.nodeId}`,
@@ -355,6 +365,22 @@ function boot(): void {
         const moraleMultiplier = 0.4 + (morale / 100) * 0.6;
         currentState = applyUpdate(currentState, { resources: { knowledgePoints: currentState.resources.knowledgePoints + labs * 2 * moraleMultiplier } });
         loop.setState(currentState);
+      }
+
+      // Periodically pop a knowledge quiz (every ~30s) if none is pending.
+      quizTickCounter += 1;
+      if (quizTickCounter >= 30 && !currentState.education.pendingQuiz) {
+        quizTickCounter = 0;
+        const eduSystem = gameSystems.find((s) => s.id === 'education') as EducationSystem | undefined;
+        if (eduSystem) {
+          const topics = ['fossil_fuels', 'solar', 'nuclear', 'materials', 'orbital_mechanics'] as const;
+          const topic = topics[Math.floor(Math.random() * topics.length)];
+          const update = eduSystem.generateQuiz(currentState, topic);
+          if (update) {
+            currentState = applyUpdate(currentState, update);
+            loop.setState(currentState);
+          }
+        }
       }
 
       // Weapons drain energy.
