@@ -24,6 +24,7 @@ import { MarsSystem } from './systems/mars-system.js';
 import { DysonSystem } from './systems/dyson-system.js';
 import { EducationSystem } from './systems/education-system.js';
 import { IMMUNE_COUNTRIES, DEV_CONSOLE_COUNTRIES } from './data/countries.js';
+import { getRecipeById } from './data/recipes.js';
 import {
   isInfiniteUnlocked,
   MAX_QUEUE_SIZE,
@@ -305,6 +306,51 @@ function boot(): void {
       }
       return;
     }
+
+    // Apply special effects from crafted items.
+    if (event.type === 'crafting_complete' && gameLoop) {
+      const recipeId = event.payload.recipeId as string;
+      const recipe = getRecipeById(recipeId);
+      if (recipe?.effectType) {
+        const state = gameLoop.getState();
+        switch (recipe.effectType) {
+          case 'military':
+            gameLoop.setState(applyUpdate(state, { mutations: [{ path: 'weapons.militaryPower', value: state.weapons.militaryPower + 30 }] }));
+            shell.notify('🤖 Combat Drone deployed! +30 military power', 'success');
+            break;
+          case 'defense':
+            // Store shield stacks (max 3)
+            try {
+              const cur = parseInt(localStorage.getItem('shg_shields') ?? '0');
+              localStorage.setItem('shg_shields', String(Math.min(3, cur + 1)));
+            } catch { /* */ }
+            shell.notify('🛡️ Shield Generator active! -20% damage next attack', 'success');
+            break;
+          case 'influence':
+            // Boost influence speed for 300 ticks
+            try {
+              const end = Date.now() + 300_000; // 5 minutes
+              localStorage.setItem('shg_propaganda_end', String(end));
+            } catch { /* */ }
+            shell.notify('📡 Propaganda Satellite launched! +15% influence for 5min', 'success');
+            break;
+          case 'energy':
+            gameLoop.setState(applyUpdate(state, { mutations: [{ path: 'energy.stored', value: state.energy.stored + 5000 }] }));
+            shell.notify('⚡ Fusion Cell activated! +5000 energy', 'success');
+            break;
+          case 'instant_build':
+            if (buildQueue.length > 0) {
+              buildQueue[0].ticksRemaining = 0;
+              shell.notify('🤖 Nanobots deployed! Next build completing instantly...', 'success');
+            } else {
+              shell.notify('🤖 Nanobots ready (no build in queue)', 'info');
+            }
+            break;
+        }
+        return; // Don't show generic "Crafted:" message for effect items
+      }
+    }
+
     const msgs: Record<string, string> = {
       era_unlock: `New era: ${event.payload.era}`,
       research_complete: `Research done: ${event.payload.nodeId}`,
@@ -389,7 +435,15 @@ function boot(): void {
       const won = attackStrength > defenseStrength;
 
       // Attacking always costs you troops, win or lose (more costly now).
-      const baseLoss = garrison * 0.6;
+      // Shield Generators reduce losses by 20% per stack (max 3).
+      let shieldStacks = 0;
+      try { shieldStacks = parseInt(localStorage.getItem('shg_shields') ?? '0'); } catch { /* */ }
+      const shieldReduction = 1 - (shieldStacks * 0.2);
+      const baseLoss = garrison * 0.6 * shieldReduction;
+      // Consume one shield stack on attack
+      if (shieldStacks > 0) {
+        try { localStorage.setItem('shg_shields', String(shieldStacks - 1)); } catch { /* */ }
+      }
 
       const playerName = state.countryProfile?.name ?? 'You';
       const defName = targetCountry.replace('_', ' ');

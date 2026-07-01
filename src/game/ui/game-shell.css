@@ -1087,3 +1087,104 @@ path.gs-svgmap-country[data-status="hostile"] { fill: #ef4444; }
   background: linear-gradient(var(--accent), var(--accent-2));
   border-radius: 4px;
 }
+
+/* ─── EXTRA VISUAL GLAZE ──────────────────────────────────────────────────── */
+
+/* Subtle scanline overlay on panels for sci-fi feel */
+.gs-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 255, 0.015) 2px,
+    rgba(0, 255, 255, 0.015) 4px
+  );
+  z-index: 1;
+}
+
+/* Glow pulse on positive income HUD item */
+.gs-hud-item[data-hud="currency"] {
+  transition: text-shadow 500ms ease;
+}
+.gs-hud-item[data-hud="currency"].gs-positive-glow {
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.6), 0 0 16px rgba(34, 197, 94, 0.3);
+}
+
+/* Milestone items — completed ones get a subtle left-border glow */
+.gs-milestone-done {
+  border-left: 3px solid #10b981;
+  padding-left: 8px;
+  text-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+.gs-milestone-pending {
+  border-left: 3px solid #334155;
+  padding-left: 8px;
+}
+
+/* Build queue items pulse when about to finish */
+.gs-queue-item-finishing {
+  animation: gs-finish-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes gs-finish-pulse {
+  from { background: rgba(251, 191, 36, 0.15); }
+  to { background: rgba(251, 191, 36, 0.35); }
+}
+
+/* Notification toast slide-in from right */
+.gs-toast {
+  animation: gs-toast-in 300ms ease-out;
+}
+@keyframes gs-toast-in {
+  from { transform: translateX(100%) translateY(-20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(-20px); opacity: 1; }
+}
+
+/* Effect recipe buttons get a special glow border */
+.gs-action-btn[data-action*="combat_drone"],
+.gs-action-btn[data-action*="shield_generator"],
+.gs-action-btn[data-action*="propaganda_satellite"],
+.gs-action-btn[data-action*="fusion_cell"],
+.gs-action-btn[data-action*="nanobots"] {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+}
+
+/* HUD buttons ripple effect on click */
+.gs-hud-btn:active {
+  transform: scale(0.92);
+  transition: transform 80ms;
+}
+
+/* Panel section titles — gradient underline */
+.gs-section-title {
+  position: relative;
+  padding-bottom: 6px;
+}
+.gs-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent, #38bdf8), transparent);
+  border-radius: 1px;
+}
+
+/* Stat grid cards — subtle hover lift with glow */
+.gs-stat {
+  transition: transform 200ms, box-shadow 200ms;
+}
+.gs-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.15);
+}
+
+/* Mars panel resource cards glow red */
+.gs-stat[style*="regolith"], .gs-stat[style*="martian"] {
+  border-color: rgba(239, 68, 68, 0.3);
+}

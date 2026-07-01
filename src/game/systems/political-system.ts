@@ -160,11 +160,18 @@ export class PoliticalSystem {
     let worldDominationAchieved = state.political.worldDominationAchieved;
 
     // Process active operations
+    // Propaganda satellite boost (+15% influence speed if active)
+    let propagandaBonus = 1.0;
+    try {
+      const end = parseInt(localStorage.getItem('shg_propaganda_end') ?? '0');
+      if (end > Date.now()) propagandaBonus = 1.15;
+    } catch { /* */ }
+
     const remainingOperations: PoliticalOperation[] = [];
     for (const op of activeOperations) {
       const ticksToProcess = Math.min(op.remainingTicks, deltaTicks);
       const rate = INFLUENCE_RATES[op.method];
-      const influenceGain = rate * ticksToProcess;
+      const influenceGain = rate * ticksToProcess * propagandaBonus;
 
       // Increase influence (capped at 100)
       const currentInfluence = influence[op.targetCountry] ?? 0;

@@ -13,15 +13,17 @@ export interface Recipe {
   unlockedByEra: Era;
   unlockedByResearch?: string;
   automatable: boolean;
+  /** If set, this is a consumable with a special effect (handled in main.ts action handler). */
+  effectType?: 'military' | 'defense' | 'influence' | 'energy' | 'instant_build' | 'morale';
+  effectDescription?: string;
 }
 
 /**
  * All crafting recipes in the game, defined as static data.
  * Recipes are unlocked by era and optionally by a research node.
- *
- * Validates: Requirements 13.1, 11.3, 11.4
  */
 export const RECIPES: Recipe[] = [
+  // ─── TIER 1: Fossil Era ─────────────────────────────────────────────
   {
     id: 'steel_beams',
     name: 'Steel Beams',
@@ -36,20 +38,8 @@ export const RECIPES: Recipe[] = [
     unlockedByEra: 'fossil',
     automatable: true,
   },
-  {
-    id: 'solar_cells',
-    name: 'Solar Cells',
-    inputs: [
-      { material: 'silicon', quantity: 2 },
-      { material: 'copper', quantity: 1 },
-    ],
-    outputs: [
-      { material: 'solar_cells', quantity: 1 },
-    ],
-    craftTime: 45,
-    unlockedByEra: 'solar',
-    automatable: true,
-  },
+
+  // ─── TIER 2: Nuclear Era ────────────────────────────────────────────
   {
     id: 'electronics',
     name: 'Electronics',
@@ -79,6 +69,36 @@ export const RECIPES: Recipe[] = [
     automatable: true,
   },
   {
+    id: 'rocket_fuel',
+    name: 'Rocket Fuel',
+    inputs: [
+      { material: 'fuel', quantity: 2 },
+      { material: 'coal', quantity: 1 },
+    ],
+    outputs: [
+      { material: 'fuel', quantity: 5 },
+    ],
+    craftTime: 25,
+    unlockedByEra: 'nuclear',
+    automatable: true,
+  },
+
+  // ─── TIER 3: Solar / Orbital Era ────────────────────────────────────
+  {
+    id: 'solar_cells',
+    name: 'Solar Cells',
+    inputs: [
+      { material: 'silicon', quantity: 2 },
+      { material: 'copper', quantity: 1 },
+    ],
+    outputs: [
+      { material: 'solar_cells', quantity: 1 },
+    ],
+    craftTime: 45,
+    unlockedByEra: 'solar',
+    automatable: true,
+  },
+  {
     id: 'advanced_circuits',
     name: 'Advanced Circuits',
     inputs: [
@@ -91,6 +111,92 @@ export const RECIPES: Recipe[] = [
     craftTime: 90,
     unlockedByEra: 'orbital',
     automatable: true,
+  },
+  {
+    id: 'combat_drone',
+    name: 'Combat Drone',
+    inputs: [
+      { material: 'steel', quantity: 2 },
+      { material: 'electronics', quantity: 1 },
+      { material: 'advanced_circuits', quantity: 1 },
+    ],
+    outputs: [
+      { material: 'advanced_circuits', quantity: 0 }, // marker — effect handled by action
+    ],
+    craftTime: 80,
+    unlockedByEra: 'orbital',
+    automatable: false,
+    effectType: 'military',
+    effectDescription: '+30 military power permanently',
+  },
+  {
+    id: 'propaganda_satellite',
+    name: 'Propaganda Satellite',
+    inputs: [
+      { material: 'solar_cells', quantity: 2 },
+      { material: 'electronics', quantity: 1 },
+      { material: 'advanced_circuits', quantity: 1 },
+    ],
+    outputs: [
+      { material: 'advanced_circuits', quantity: 0 }, // marker
+    ],
+    craftTime: 100,
+    unlockedByEra: 'orbital',
+    automatable: false,
+    effectType: 'influence',
+    effectDescription: '+15% influence speed for 5 minutes',
+  },
+
+  // ─── TIER 4: Space Mining / Dyson Era ───────────────────────────────
+  {
+    id: 'shield_generator',
+    name: 'Shield Generator',
+    inputs: [
+      { material: 'advanced_circuits', quantity: 3 },
+      { material: 'fuel_rods', quantity: 2 },
+      { material: 'rare_earth', quantity: 5 },
+    ],
+    outputs: [
+      { material: 'advanced_circuits', quantity: 0 }, // marker
+    ],
+    craftTime: 120,
+    unlockedByEra: 'space_mining',
+    automatable: false,
+    effectType: 'defense',
+    effectDescription: '-20% damage on next attack (stacks to 3)',
+  },
+  {
+    id: 'fusion_cell',
+    name: 'Fusion Cell',
+    inputs: [
+      { material: 'fuel_rods', quantity: 3 },
+      { material: 'advanced_circuits', quantity: 2 },
+    ],
+    outputs: [
+      { material: 'advanced_circuits', quantity: 0 }, // marker
+    ],
+    craftTime: 150,
+    unlockedByEra: 'space_mining',
+    automatable: false,
+    effectType: 'energy',
+    effectDescription: '+5000 energy instantly',
+  },
+  {
+    id: 'nanobots',
+    name: 'Nanobots',
+    inputs: [
+      { material: 'advanced_circuits', quantity: 3 },
+      { material: 'rare_earth', quantity: 2 },
+      { material: 'water', quantity: 1 },
+    ],
+    outputs: [
+      { material: 'advanced_circuits', quantity: 0 }, // marker
+    ],
+    craftTime: 180,
+    unlockedByEra: 'space_mining',
+    automatable: false,
+    effectType: 'instant_build',
+    effectDescription: 'Instantly completes next build in queue',
   },
 ];
 

@@ -1,0 +1,151 @@
+═══════════════════════════════════════════════════════════════════
+  SUN HARVESTER — RESOURCE & CRAFTING DESIGN DOCUMENT
+═══════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  RAW MATERIALS (mined or produced)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Material         Source            Current Uses
+  ────────────     ─────────────     ──────────────────────────
+  Coal             Coal Mine         → Steel (crafting), Coal Power Plant fuel
+  Iron Ore         Iron Mine         → Steel (crafting)
+  Silicon          Silicon Mine      → Solar Cells, Electronics (crafting)
+  Copper           Copper Mine       → Solar Cells, Electronics (crafting)
+  Uranium          Uranium Mine      → Fuel Rods (crafting)
+  Rare Earth       (no mine yet)     → Advanced Circuits (crafting)
+  Water            (no source yet)   → NOTHING (unused)
+  Fuel             (no source yet)   → Mars transfers, orbital launches
+  
+  Mars Materials:
+  Regolith Iron    Mars base prod    → Transfer to Earth (becomes iron)
+  Martian Ice      Mars base prod    → Transfer to Earth (becomes water)
+  CO2              Mars base prod    → Transfer to Earth (becomes fuel)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CURRENT CRAFTED ITEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Item               Inputs                Era        Current Effect
+  ────────────       ──────────────────    ────────   ─────────────────
+  Steel              3 Iron + 1 Coal       Fossil     Used in era costs, weapons
+  Solar Cells        2 Silicon + 1 Copper  Solar      NONE (just stockpiled)
+  Electronics        2 Copper + 1 Silicon  Nuclear    Used in era costs, Mars relay
+  Fuel Rods          2 Uranium + 1 Steel   Nuclear    NONE (just stockpiled)
+  Advanced Circuits  2 Rare Earth + 1 Elec Orbital    NONE (just stockpiled)
+
+  PROBLEM: Solar Cells, Fuel Rods, and Advanced Circuits have NO gameplay
+  effect. They're crafted, sold on market, but serve no purpose otherwise.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PROPOSED NEW RECIPES (with effects)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. COMBAT DRONE (has effect)
+     Inputs:  2 Steel + 1 Electronics + 1 Advanced Circuits
+     Era:     Orbital
+     Effect:  +30 military power permanently (like producing rifles but much stronger)
+     Why:     Gives Advanced Circuits a military use. Late-game power scaling.
+
+  2. SHIELD GENERATOR (has effect)
+     Inputs:  3 Advanced Circuits + 2 Fuel Rods + 5 Rare Earth
+     Era:     Space Mining
+     Effect:  -20% damage taken on next attack (stacks up to 3). Consumed on use.
+     Why:     Gives Fuel Rods a purpose. Defensive crafting for harder late-game.
+
+  3. PROPAGANDA SATELLITE (has effect)
+     Inputs:  2 Solar Cells + 1 Electronics + 1 Advanced Circuits
+     Era:     Orbital
+     Effect:  +5% influence gain speed globally for 300 ticks (5 min). Consumed.
+     Why:     Gives Solar Cells a real use. Helps with the nerfed influence system.
+
+  4. FUSION CELL (has effect — new material)
+     Inputs:  3 Fuel Rods + 2 Advanced Circuits
+     Era:     Space Mining
+     Effect:  Produces as material "fusion_cell". Required for Dyson Ring era cost.
+              Also: 1 Fusion Cell = +500 energy instantly when used.
+     Why:     Creates a crafting chain (Uranium → Fuel Rods → Fusion Cell).
+              Makes the path to Dyson Ring require actual crafting progression.
+
+  5. NANOBOTS (has effect — new material)
+     Inputs:  3 Advanced Circuits + 2 Rare Earth + 1 Water
+     Era:     Space Mining
+     Effect:  Produces "nanobots". Use: instantly completes the next build in queue.
+              OR: repairs morale by +10 (nano-medicine).
+     Why:     Gives Water a use. Top-tier consumable that rewards deep crafting.
+
+  6. ROCKET FUEL (utility)
+     Inputs:  2 Fuel + 1 Coal
+     Era:     Nuclear
+     Effect:  Produces "rocket_fuel" (5 units). Used for Mars transfers and
+              future space missions. Cheaper than raw fuel for transfers.
+     Why:     Gives the unused Fuel material a crafting path. Makes Mars
+              transfers cost a craftable instead of hard-to-get raw fuel.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PROPOSED NEW USES FOR EXISTING CRAFTABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Solar Cells (currently no effect):
+    → Required for building Solar Panels (1 per panel, currently free)
+    → Used in Propaganda Satellite recipe
+    → Can be "installed" for permanent +2% solar panel efficiency
+
+  Fuel Rods (currently no effect):
+    → Required for Nuclear Power Plants (2 per plant, currently free)
+    → Used in Shield Generator recipe
+    → Used in Fusion Cell recipe (chain to Dyson Ring)
+
+  Advanced Circuits (currently no effect):
+    → Required for era advancement to Space Mining (add to ERA_COSTS)
+    → Used in Combat Drone, Shield Generator, Propaganda Satellite, Fusion Cell
+    → Required for Mars Relay Antenna (currently just electronics)
+
+  Water (currently no source, no use):
+    → Produced by transferring Martian Ice to Earth
+    → Used in Nanobots recipe
+    → Can be consumed for +5 morale ("public water supply")
+    → Required for Greenhouse rooms on Mars (future)
+
+  Fuel (currently hard to get):
+    → Produced by transferring CO2 from Mars
+    → Used in Rocket Fuel recipe
+    → Required for Mars base upgrades (already works)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CRAFTING CHAIN VISUALIZATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TIER 1 (Fossil):
+    Iron + Coal → Steel
+
+  TIER 2 (Nuclear):
+    Copper + Silicon → Electronics
+    Uranium + Steel → Fuel Rods
+    Fuel + Coal → Rocket Fuel (NEW)
+
+  TIER 3 (Solar/Orbital):
+    Silicon + Copper → Solar Cells
+    Rare Earth + Electronics → Advanced Circuits
+    Steel + Electronics + Adv. Circuits → Combat Drone (NEW, gives power)
+    Solar Cells + Electronics + Adv. Circuits → Propaganda Satellite (NEW, influence boost)
+
+  TIER 4 (Space Mining):
+    Fuel Rods + Adv. Circuits → Fusion Cell (NEW, energy/era requirement)
+    Adv. Circuits + Fuel Rods + Rare Earth → Shield Generator (NEW, defense)
+    Adv. Circuits + Rare Earth + Water → Nanobots (NEW, instant build/heal)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SUMMARY: ITEMS WITH DIRECT GAMEPLAY EFFECTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Combat Drone       → +30 military power (permanent)
+  2. Shield Generator   → -20% attack damage (consumable, stacks 3)
+  3. Propaganda Sat     → +5% influence speed for 5 min (consumable)
+  4. Fusion Cell        → +500 energy on use OR required for Dyson era
+  5. Nanobots           → Instant-complete next build OR +10 morale
+
+  All 5 have clear, impactful effects that make crafting feel meaningful
+  and create real progression through the tech tiers.
+
+═══════════════════════════════════════════════════════════════════
