@@ -627,9 +627,126 @@ function boot(): void {
         case 'unlock_dyson':
           updated = applyUpdate(state, { mutations: [{ path: 'dyson.unlocked', value: true }] });
           break;
+        case 'unlock_relay':
+          updated = applyUpdate(state, { mutations: [{ path: 'mars.relayBuilt', value: true }] });
+          break;
+        case 'unlock_aliens':
+          updated = applyUpdate(state, { mutations: [
+            { path: 'alien.encountered', value: true },
+            { path: 'alien.relationsScore', value: 50 },
+            { path: 'mars.relayBuilt', value: true },
+          ] });
+          break;
+        case 'add_shields':
+          try { const cur = parseInt(localStorage.getItem('shg_shields') ?? '0'); localStorage.setItem('shg_shields', String(Math.min(3, cur + 1))); } catch { /* */ }
+          break;
+        case 'add_propaganda':
+          try { localStorage.setItem('shg_propaganda_end', String(Date.now() + 300_000)); } catch { /* */ }
+          break;
+        // ─── Instant Build ──────────────────────────────────────────────
+        case 'build_mine_coal': {
+          const mines = [...state.infrastructure.mines, { id: `mine_${Date.now()}`, materialType: 'coal' as any, level: 1, productionRate: 2.5 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'infrastructure.mines', value: mines }] });
+          break;
+        }
+        case 'build_mine_iron': {
+          const mines = [...state.infrastructure.mines, { id: `mine_${Date.now()}`, materialType: 'iron_ore' as any, level: 1, productionRate: 2.0 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'infrastructure.mines', value: mines }] });
+          break;
+        }
+        case 'build_mine_silicon': {
+          const mines = [...state.infrastructure.mines, { id: `mine_${Date.now()}`, materialType: 'silicon' as any, level: 1, productionRate: 1.75 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'infrastructure.mines', value: mines }] });
+          break;
+        }
+        case 'build_mine_copper': {
+          const mines = [...state.infrastructure.mines, { id: `mine_${Date.now()}`, materialType: 'copper' as any, level: 1, productionRate: 2.0 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'infrastructure.mines', value: mines }] });
+          break;
+        }
+        case 'build_mine_uranium': {
+          const mines = [...state.infrastructure.mines, { id: `mine_${Date.now()}`, materialType: 'uranium' as any, level: 1, productionRate: 1.0 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'infrastructure.mines', value: mines }] });
+          break;
+        }
+        case 'build_solar': {
+          const panels = [...state.energy.solarPanels, { id: `sp_${Date.now()}`, locationId: 'dev', efficiency: 1.0, degradationRate: 0.0001 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'energy.solarPanels', value: panels }] });
+          break;
+        }
+        case 'build_plant_coal': {
+          const plants = [...state.energy.powerPlants, { id: `pp_${Date.now()}`, type: 'coal' as any, level: 1, fuelType: 'coal' as any, consumptionRate: 1, outputRate: 50 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'energy.powerPlants', value: plants }] });
+          break;
+        }
+        case 'build_plant_nuclear': {
+          const plants = [...state.energy.powerPlants, { id: `pp_${Date.now()}`, type: 'nuclear' as any, level: 1, fuelType: 'uranium' as any, consumptionRate: 0.5, outputRate: 200 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'energy.powerPlants', value: plants }] });
+          break;
+        }
+        case 'build_lab':
+          updated = applyUpdate(state, { mutations: [{ path: 'statistics.totalResearchCompleted', value: state.statistics.totalResearchCompleted + 1 }] });
+          break;
+        case 'build_weapons_factory': {
+          const wf = [...state.weapons.factories, { id: `wf_${Date.now()}`, type: 'conventional', level: 1, productionRate: 1, energyCost: 12 }];
+          updated = applyUpdate(state, { mutations: [{ path: 'weapons.factories', value: wf }] });
+          break;
+        }
+        // ─── Upgrades (free) ────────────────────────────────────────────
+        case 'up_queue':
+          maxQueueSize += 2;
+          try { localStorage.setItem('shg_queue_max', String(maxQueueSize)); } catch { /* */ }
+          break;
+        case 'up_build_speed':
+          buildSpeedMultiplier += 0.25;
+          try { localStorage.setItem('shg_build_speed', buildSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          break;
+        case 'up_knowledge_speed':
+          knowledgeSpeedMultiplier += 0.5;
+          try { localStorage.setItem('shg_knowledge_speed', knowledgeSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          break;
+        case 'up_research_speed':
+          researchSpeedMultiplier += 0.5;
+          try { localStorage.setItem('shg_research_speed', researchSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          break;
+        case 'up_craft_speed':
+          craftSpeedMultiplier += 0.5;
+          try { localStorage.setItem('shg_craft_speed', craftSpeedMultiplier.toFixed(2)); } catch { /* */ }
+          break;
+        case 'up_timewarp':
+          timewarpUnlocked = true;
+          timewarpActive = true;
+          try { localStorage.setItem('shg_timewarp_unlocked', '1'); localStorage.setItem('shg_timewarp_active', '1'); } catch { /* */ }
+          break;
+        // ─── Conquer ────────────────────────────────────────────────────
+        case 'conquer_all': {
+          const allCountries = ['usa', 'china', 'india', 'germany', 'japan', 'uk', 'france', 'south_korea', 'brazil'] as CountryId[];
+          const toConquer = allCountries.filter(c => c !== state.country);
+          const influence = { ...state.political.influence };
+          for (const c of toConquer) influence[c] = 100;
+          updated = applyUpdate(state, { mutations: [
+            { path: 'political.installedPoliticians', value: toConquer },
+            { path: 'political.influence', value: influence },
+            { path: 'political.worldDominationAchieved', value: true },
+          ] });
+          break;
+        }
         default: {
-          const newStockpiles = { ...state.materials.stockpiles, [resource]: (state.materials.stockpiles[resource as keyof typeof state.materials.stockpiles] ?? 0) + AMOUNT };
-          updated = applyUpdate(state, { materials: { stockpiles: newStockpiles } });
+          // Check if it's a conquer_<country> command
+          if (resource.startsWith('conquer_')) {
+            const country = resource.replace('conquer_', '') as CountryId;
+            const influence = { ...state.political.influence, [country]: 100 };
+            const installed = [...state.political.installedPoliticians];
+            if (!installed.includes(country)) installed.push(country);
+            updated = applyUpdate(state, { mutations: [
+              { path: 'political.influence', value: influence },
+              { path: 'political.installedPoliticians', value: installed },
+            ] });
+          } else {
+            // Material grant
+            const newStockpiles = { ...state.materials.stockpiles, [resource]: (state.materials.stockpiles[resource as keyof typeof state.materials.stockpiles] ?? 0) + AMOUNT };
+            updated = applyUpdate(state, { materials: { stockpiles: newStockpiles } });
+          }
           break;
         }
       }

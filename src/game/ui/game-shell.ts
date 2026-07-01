@@ -1084,14 +1084,14 @@ export class GameShell {
     const russiaCheat = DEV_CONSOLE_COUNTRIES.has(state.country) ? `
       <h3 class="gs-section-title">🇷🇺 Russia Dev Console</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <select id="russia-cheat-resource" class="gs-action-btn" style="padding:6px 10px;min-width:140px;">
-          <optgroup label="Resources">
-            <option value="currency">Currency</option>
-            <option value="energy">Energy</option>
-            <option value="knowledge">Knowledge</option>
-            <option value="military">Military Power</option>
+        <select id="russia-cheat-resource" class="gs-action-btn" style="padding:6px 10px;min-width:160px;">
+          <optgroup label="💰 Resources">
+            <option value="currency">Currency ($)</option>
+            <option value="energy">Energy (⚡)</option>
+            <option value="knowledge">Knowledge (📚)</option>
+            <option value="military">Military Power (🔫)</option>
           </optgroup>
-          <optgroup label="Materials">
+          <optgroup label="⛏️ Raw Materials">
             <option value="coal">Coal</option>
             <option value="iron_ore">Iron Ore</option>
             <option value="silicon">Silicon</option>
@@ -1101,27 +1101,65 @@ export class GameShell {
             <option value="rare_earth">Rare Earth</option>
             <option value="water">Water</option>
           </optgroup>
-          <optgroup label="Crafted Items">
+          <optgroup label="⚒️ Crafted Items">
             <option value="steel">Steel</option>
             <option value="solar_cells">Solar Cells</option>
             <option value="electronics">Electronics</option>
             <option value="fuel_rods">Fuel Rods</option>
             <option value="advanced_circuits">Adv. Circuits</option>
           </optgroup>
-          <optgroup label="Mars Resources">
+          <optgroup label="🔴 Mars Resources">
             <option value="regolith_iron">Regolith Iron</option>
             <option value="martian_ice">Martian Ice</option>
             <option value="co2">CO2</option>
           </optgroup>
-          <optgroup label="Special">
-            <option value="morale">Morale</option>
-            <option value="approval">Public Approval</option>
+          <optgroup label="🎮 Game State">
+            <option value="morale">Set Morale to 100</option>
+            <option value="approval">Set Public Approval to 100</option>
             <option value="advance_era">Advance Era</option>
-            <option value="kill_un">Destroy UN (set power to 0)</option>
-            <option value="max_storage">Max Energy Storage +50k</option>
+            <option value="kill_un">Destroy UN (power → 0)</option>
+            <option value="max_storage">Energy Storage +50,000</option>
+            <option value="add_shields">Add Shield Stack (+1)</option>
+            <option value="add_propaganda">Activate Propaganda Sat (5min)</option>
+          </optgroup>
+          <optgroup label="🔓 Unlock Systems">
             <option value="unlock_mars">Unlock Mars</option>
-            <option value="unlock_space">Unlock Space</option>
-            <option value="unlock_dyson">Unlock Dyson</option>
+            <option value="unlock_space">Unlock Space Mining</option>
+            <option value="unlock_dyson">Unlock Dyson Ring</option>
+            <option value="unlock_relay">Build Mars Relay</option>
+            <option value="unlock_aliens">Contact Aliens</option>
+          </optgroup>
+          <optgroup label="🏗️ Instant Build">
+            <option value="build_mine_coal">+ Coal Mine</option>
+            <option value="build_mine_iron">+ Iron Mine</option>
+            <option value="build_mine_silicon">+ Silicon Mine</option>
+            <option value="build_mine_copper">+ Copper Mine</option>
+            <option value="build_mine_uranium">+ Uranium Mine</option>
+            <option value="build_solar">+ Solar Panel</option>
+            <option value="build_plant_coal">+ Coal Power Plant</option>
+            <option value="build_plant_nuclear">+ Nuclear Power Plant</option>
+            <option value="build_lab">+ Research Lab</option>
+            <option value="build_weapons_factory">+ Weapons Factory</option>
+          </optgroup>
+          <optgroup label="⬆️ Upgrades (free)">
+            <option value="up_queue">Queue Size +2</option>
+            <option value="up_build_speed">Build Speed +25%</option>
+            <option value="up_knowledge_speed">Knowledge Speed +50%</option>
+            <option value="up_research_speed">Research Speed +50%</option>
+            <option value="up_craft_speed">Craft Speed +50%</option>
+            <option value="up_timewarp">Unlock Timewarp</option>
+          </optgroup>
+          <optgroup label="🌍 Conquer">
+            <option value="conquer_all">Conquer All Countries</option>
+            <option value="conquer_usa">Conquer USA</option>
+            <option value="conquer_china">Conquer China</option>
+            <option value="conquer_india">Conquer India</option>
+            <option value="conquer_germany">Conquer Germany</option>
+            <option value="conquer_japan">Conquer Japan</option>
+            <option value="conquer_uk">Conquer UK</option>
+            <option value="conquer_france">Conquer France</option>
+            <option value="conquer_south_korea">Conquer South Korea</option>
+            <option value="conquer_brazil">Conquer Brazil</option>
           </optgroup>
         </select>
         <input id="russia-cheat-amount" type="number" value="9000000000" min="1" style="width:130px;padding:6px 10px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#f8fafc;font-size:14px;" />
