@@ -65,7 +65,16 @@ function showCrashScreen(message: string): void {
 }
 
 window.addEventListener('error', (e) => showCrashScreen(e.message ?? 'Unknown error'));
-window.addEventListener('unhandledrejection', (e) => showCrashScreen(String(e.reason ?? 'Unknown error')));
+window.addEventListener('unhandledrejection', (e) => {
+  const reason = String(e.reason ?? 'Unknown error');
+  // Don't crash the game for network errors (textures/map fail gracefully).
+  if (reason.includes('Failed to fetch') || reason.includes('NetworkError') || reason.includes('Load failed')) {
+    console.warn('[SunHarvester] Network fetch failed (non-fatal):', reason);
+    e.preventDefault();
+    return;
+  }
+  showCrashScreen(reason);
+});
 
 // ─── Main Game Init (wrapped in try/catch) ──────────────────────────────────
 
