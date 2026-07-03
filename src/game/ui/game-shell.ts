@@ -1388,12 +1388,67 @@ export class GameShell {
 
   private renderSunPanel(state: GameState): void {
     this.panelTitle.textContent = '☀️ Dyson Ring';
+
+    if (!state.dyson.unlocked || !state.dyson.segments || state.dyson.segments.length === 0) {
+      this.panelContent.innerHTML = `
+        <p class="gs-muted">Dyson Ring not initialized. Reach the Dyson Ring era to begin construction.</p>
+        <div class="gs-stat-grid">
+          <div class="gs-stat"><span class="gs-stat-label">Status</span><span class="gs-stat-value">🔒 Locked</span></div>
+        </div>
+      `;
+      return;
+    }
+
+    const btn = (label: string, action: ActionPayload, disabled = false, info = '') => {
+      const infoIcon = info ? ` <span class="gs-info-badge" title="${info.replace(/"/g, '&quot;')}">ⓘ</span>` : '';
+      return `<button class="gs-action-btn" data-action='${JSON.stringify(action)}' ${disabled ? 'disabled' : ''}>${label}${infoIcon}</button>`;
+    };
+
+    let segmentsHtml = '';
+    for (const seg of state.dyson.segments as any[]) {
+      const isComplete = seg.completed;
+      const reqsHtml = (seg.requirements as any[]).map((r: any) => {
+        const have = state.materials.stockpiles[r.material as keyof typeof state.materials.stockpiles] ?? 0;
+        const color = have >= r.quantity ? '#6ee7b7' : '#fca5a5';
+        return `<span style="color:${color}">${r.material.replace('_', ' ')}: ${formatNumber(have)}/${r.quantity}</span>`;
+      }).join(' · ');
+
+      const canContribute = !isComplete && (seg.requirements as any[]).some((r: any) => {
+        const have = state.materials.stockpiles[r.material as keyof typeof state.materials.stockpiles] ?? 0;
+        return have >= Math.ceil(r.quantity * 0.1); // need at least 10% of remaining
+      });
+
+      // Build a materials payload with 10% contribution of what's needed
+      const contributeMaterials: Record<string, number> = {};
+      if (!isComplete) {
+        for (const r of seg.requirements as any[]) {
+          const contribute = Math.ceil(r.quantity * 0.1);
+          contributeMaterials[r.material] = contribute;
+        }
+      }
+
+      segmentsHtml += `
+        <div style="padding:10px;margin-bottom:8px;border-radius:8px;background:${isComplete ? 'rgba(16,185,129,0.1)' : 'rgba(30,41,59,0.6)'};border:1px solid ${isComplete ? '#10b981' : '#334155'};">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong>${isComplete ? '✅' : '🔧'} ${seg.name}</strong>
+            <span style="font-size:12px;color:${isComplete ? '#6ee7b7' : '#94a3b8'};">${isComplete ? 'COMPLETE' : `${seg.progress ?? 0}%`}</span>
+          </div>
+          ${!isComplete ? `<div style="font-size:12px;margin-top:4px;">${reqsHtml}</div>
+          <div style="margin-top:6px;">
+            ${btn('🔨 Contribute 10%', { type: 'contribute_to_segment', payload: { segmentId: seg.id, materials: contributeMaterials } }, !canContribute, 'Contributes 10% of remaining materials from your stockpile.')}
+          </div>` : ''}
+        </div>`;
+    }
+
     this.panelContent.innerHTML = `
       <div class="gs-stat-grid">
-        <div class="gs-stat"><span class="gs-stat-label">Segments</span><span class="gs-stat-value">${state.dyson.completedSegments} / ${state.dyson.totalSegments}</span></div>
-        <div class="gs-stat"><span class="gs-stat-label">Energy Multiplier</span><span class="gs-stat-value gs-positive">${state.dyson.energyMultiplier.toFixed(1)}x</span></div>
-        ${state.dyson.victoryAchieved ? '<div class="gs-stat"><span class="gs-stat-value gs-positive">🏆 VICTORY</span></div>' : ''}
+        <div class="gs-stat"><span class="gs-stat-label">Segments</span><span class="gs-stat-value">${state.dyson.completedSegments ?? 0} / ${state.dyson.totalSegments ?? 5}</span></div>
+        <div class="gs-stat"><span class="gs-stat-label">Energy Multiplier</span><span class="gs-stat-value gs-positive">${(state.dyson.energyMultiplier ?? 1).toFixed(1)}x</span></div>
+        ${state.dyson.victoryAchieved ? '<div class="gs-stat"><span class="gs-stat-value gs-positive">🏆 VICTORY ACHIEVED</span></div>' : ''}
       </div>
+      <p class="gs-muted">Build all 5 segments to complete the Dyson Ring. Contribute materials directly or craft Dyson components from the ⚒️ Craft panel.</p>
+      <h3 class="gs-section-title">🛠️ Segments</h3>
+      ${segmentsHtml}
     `;
   }
 
