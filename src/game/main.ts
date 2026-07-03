@@ -346,6 +346,38 @@ function boot(): void {
               shell.notify('🤖 Nanobots ready (no build in queue)', 'info');
             }
             break;
+          case 'dyson_segment' as any: {
+            // Auto-contribute to the first incomplete Dyson segment
+            const s = gameLoop.getState();
+            if (s.dyson.unlocked && s.dyson.segments) {
+              const incomplete = s.dyson.segments.find((seg: any) => !seg.completed);
+              if (incomplete) {
+                // Reduce all requirements by a percentage (each craft = ~10% of a segment)
+                const newSegments = s.dyson.segments.map((seg: any) => {
+                  if (seg.id !== incomplete.id) return seg;
+                  const newReqs = seg.requirements.map((r: any) => ({
+                    ...r,
+                    quantity: Math.max(0, r.quantity - Math.ceil(r.quantity * 0.1)),
+                  }));
+                  const done = newReqs.every((r: any) => r.quantity <= 0);
+                  return { ...seg, requirements: newReqs, completed: done, progress: done ? 100 : seg.progress + 10 };
+                });
+                const completed = newSegments.filter((seg: any) => seg.completed).length;
+                gameLoop.setState(applyUpdate(s, { mutations: [
+                  { path: 'dyson.segments', value: newSegments },
+                  { path: 'dyson.completedSegments', value: completed },
+                ] }));
+                shell.notify(`💫 Dyson contribution! Segment "${incomplete.name}" progress +10%`, 'success');
+                if (completed >= s.dyson.totalSegments) {
+                  shell.celebrate();
+                  shell.notify('🏆 DYSON RING COMPLETE! You win!', 'success');
+                }
+              }
+            } else {
+              shell.notify('💫 Dyson Ring not unlocked yet. Reach Dyson Ring era first.', 'warning');
+            }
+            break;
+          }
         }
         return; // Don't show generic "Crafted:" message for effect items
       }

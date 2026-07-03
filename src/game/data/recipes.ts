@@ -198,6 +198,59 @@ export const RECIPES: Recipe[] = [
     effectType: 'instant_build',
     effectDescription: 'Instantly completes next build in queue',
   },
+
+  // ─── TIER 5: Dyson Ring Era ─────────────────────────────────────────
+  {
+    id: 'dyson_frame',
+    name: 'Dyson Frame Section',
+    inputs: [
+      { material: 'steel', quantity: 20 },
+      { material: 'advanced_circuits', quantity: 5 },
+      { material: 'rare_earth', quantity: 10 },
+    ],
+    outputs: [
+      { material: 'steel', quantity: 0 }, // marker — contributes to Dyson Ring
+    ],
+    craftTime: 200,
+    unlockedByEra: 'dyson_ring',
+    automatable: true,
+    effectType: 'dyson_segment' as any,
+    effectDescription: 'Contributes structural materials to the active Dyson segment',
+  },
+  {
+    id: 'dyson_collector',
+    name: 'Solar Collector Module',
+    inputs: [
+      { material: 'solar_cells', quantity: 15 },
+      { material: 'electronics', quantity: 8 },
+      { material: 'advanced_circuits', quantity: 3 },
+    ],
+    outputs: [
+      { material: 'solar_cells', quantity: 0 }, // marker
+    ],
+    craftTime: 180,
+    unlockedByEra: 'dyson_ring',
+    automatable: true,
+    effectType: 'dyson_segment' as any,
+    effectDescription: 'Contributes solar collection arrays to the active Dyson segment',
+  },
+  {
+    id: 'dyson_power_core',
+    name: 'Power Core Unit',
+    inputs: [
+      { material: 'fuel_rods', quantity: 5 },
+      { material: 'advanced_circuits', quantity: 10 },
+      { material: 'electronics', quantity: 5 },
+    ],
+    outputs: [
+      { material: 'fuel_rods', quantity: 0 }, // marker
+    ],
+    craftTime: 220,
+    unlockedByEra: 'dyson_ring',
+    automatable: true,
+    effectType: 'dyson_segment' as any,
+    effectDescription: 'Contributes power distribution systems to the active Dyson segment',
+  },
 ];
 
 /**
